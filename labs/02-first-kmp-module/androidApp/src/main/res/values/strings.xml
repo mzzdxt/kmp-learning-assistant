@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PocketLab</string>
+    <string name="app_tagline">共享事实，原生体验</string>
+    <string name="refresh">刷新</string>
+    <string name="refreshing">正在同步实验…</string>
+    <string name="empty_title">还没有实验</string>
+    <string name="empty_body">刷新示例数据，开始观察一个小改变。</string>
+    <string name="hypothesis_label">我的猜想</string>
+    <string name="notes_label">验证方法</string>
+    <string name="synced">已同步</string>
+    <string name="pending_upload">待上传</string>
+    <string name="refresh_applied">同步完成：更新了 %1$d 条记录</string>
+    <string name="refresh_no_change">已是最新状态</string>
+    <string name="refresh_unauthorized">身份已过期，请重新登录</string>
+    <string name="refresh_server">服务暂时不可用，本地数据仍可阅读</string>
+    <string name="refresh_malformed">服务器数据格式不兼容</string>
+    <string name="refresh_connection">当前离线，继续显示本地数据</string>
+    <string name="refresh_unexpected_status">服务器返回了未处理的状态</string>
+    <string name="refresh_unexpected">刷新失败，本地数据没有改变</string>
+</resources>

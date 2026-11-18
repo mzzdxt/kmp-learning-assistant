@@ -1,0 +1,297 @@
+# KMP 学习日志
+
+## 使用方式
+
+每次实验只记录四件事：
+
+1. 我原来以为……
+2. 实验实际发生了……
+3. 原因是……
+4. 这会如何影响工程决策……
+
+这些“预期与事实的落差”是最值得写进公众号的内容。
+
+---
+
+## 2026-11-17：起点
+
+### 已有基础
+
+- Android 开发
+- Kotlin
+
+### 当前认知
+
+- 知道 KMM 能用于 Android 和 iOS。
+- 尚不清楚编译原理、工程结构与使用方式。
+
+### 第一批待回答问题
+
+- [ ] iOS 为什么能调用 Kotlin？
+- [ ] 哪些代码能进入 `commonMain`？
+- [ ] `expect/actual` 和接口注入如何选择？
+- [ ] 共享 UI 与原生 UI 如何选择？
+- [ ] Kotlin 协程如何与 Swift 并发协作？
+- [ ] 共享模块如何测试、打包和发布？
+
+### 实验 01 记录
+
+待完成：[在写代码前画出跨平台边界](../labs/01-boundary-before-code/README.md)
+
+---
+
+## 2026-11-18：第一个可运行 KMP 模块
+
+### 我原来以为
+
+- “iOS target” 是一个笼统目标，模板里的 `iosSimulatorArm64()` 应该哪里都能用。
+- Kotlin、AGP 和 Gradle 分别落在兼容表范围内，就可以任意组合。
+- 测试任务长时间没有输出，大概率是测试逻辑挂死。
+
+### 实验实际发生了
+
+- 当前 host 是 x86_64，`iosSimulatorArm64` 被禁用，必须使用 `iosX64`。
+- AGP 9.3.1 + Gradle 8.13 在配置阶段失败；AGP 9.3 自己要求 Gradle 9.5 以上。
+- iOS 测试在 Simulator `dyld` 装载阶段等待约 3 分钟，真正的 5 条测试仅执行约 14 ms。
+- `:shared:allTests` 最终聚合 JVM、Android Host、iOS x64 三个目标，共 15 次测试执行，全部通过。
+
+### 原因
+
+- target 包含平台和体系结构，不只是操作系统名称。
+- 版本兼容是多条边组成的图，不是只看 Kotlin 的一张表。
+- compilation、链接、Simulator 启动和测试代码执行是不同阶段，必须用任务输出、进程栈与 XML 报告分别取证。
+
+### 对工程决策的影响
+
+- 固定并记录整套工具链版本，升级时同时核对 Kotlin↔Gradle、Kotlin↔AGP、AGP↔Gradle、Kotlin↔Xcode。
+- CI runner 的 CPU 架构是构建配置的一部分。
+- 不把 `BUILD SUCCESSFUL` 当成唯一证据；关键测试应检查生成的测试报告和用例数量。
+
+对应实验：[实验 02](../labs/02-first-kmp-module/README.md)  
+对应文章：[一张图看懂 KMP 工程](../articles/02-project-model.md)
+
+---
+
+## 2026-11-18：PocketLab 的第一条共享边界
+
+### 我原来以为
+
+- 跨平台能力应该优先用 `expect/actual`，看起来更“KMP”。
+- Repository 的实现还没选好数据库，就不能先写保存用例。
+- 共享校验最好直接返回错误文案，平台拿来就能展示。
+
+### 实验实际发生了
+
+- Repository、Clock、ID Generator 用普通 Kotlin 接口即可在 commonTest 注入 fake，无需 `expect/actual`。
+- 保存用例只需要“保存已验证记录”这个能力，数据库选型可以延后。
+- 共享层返回 field + reason code，Android/iOS 可各自映射本地化文案。
+- PocketLab 新增 6 条 commonTest，在 JVM、Android Host、iOS 分别执行，实际新增 18 次测试；累计 33/33 通过。
+
+### 原因
+
+- 共享边界由语义和变化原因决定，不由代码能否编译决定。
+- 普通接口允许一个平台有多个实现，也容易替换测试 fake。
+- 文案属于本地化与 UI 呈现；稳定错误语义才属于共同业务规则。
+
+### 对工程决策的影响
+
+- 先设计领域需要的最小能力，再选择数据库、网络和系统 API。
+- 有状态、需替换的能力优先使用接口注入；薄而唯一的平台事实才考虑 `expect/actual`。
+- 测试失败路径是否触发副作用，不能只测试“输入字符串是否为空”。
+
+对应产品简报：[PocketLab](../docs/pocketlab-product-brief.md)  
+对应决策记录：[ADR-0001](../docs/adr/0001-pocketlab-sharing-boundary.md)  
+对应实验：[实验 03](../labs/03-sharing-boundary/README.md)  
+对应文章：[commonMain 不是公共垃圾场](../articles/03-sharing-boundary.md)
+
+---
+
+## 2026-11-18：`expect/actual` 只做薄平台接缝
+
+### 我原来以为
+
+- 用了普通接口，就不需要或不应该再用 `expect/actual`。
+- iOS SDK 头文件中的 Objective-C 属性，在 Kotlin/Native 中一定能用直觉相同的属性语法访问。
+- `expect/actual` 的测试重点只是“每个平台能编译”。
+
+### 实验实际发生了
+
+- 领域继续依赖普通 `Clock`/`IdGenerator` 接口；`expect/actual` 只负责创建默认生产 adapters，两者可以互补。
+- `NSDate().timeIntervalSince1970` 在当前 compilation 无法解析；改用 Core Foundation C API 后通过。
+- commonTest 不仅验证 actual 存在，还验证时间处于合理 Unix epoch 区间、ID 非空且不同、平台工厂能完成保存。
+- 新增 3 条契约在三个 targets 实际执行 9 次，累计 42/42 通过。
+
+### 原因
+
+- 普通接口解决对象替换和运行时组合；`expect/actual` 解决 target 的编译期声明匹配。
+- Objective-C/C API 会经过 cinterop 映射，Kotlin 侧可见声明才是编译事实。
+- 能链接不代表语义正确；时间单位、纪元和 ID 行为仍需契约测试。
+
+### 对工程决策的影响
+
+- 把 expected declaration 表面积压到最小，优先使用函数/属性工厂。
+- 领域用例绝不直接读取系统时钟或 UUID，继续保留 deterministic fake。
+- 平台互操作遇到问题时检查 SDK 头文件、Kotlin 声明与最小编译实验，不靠记忆猜方法名。
+
+对应决策记录：[ADR-0002](../docs/adr/0002-platform-adapter-factories.md)  
+对应实验：[实验 04](../labs/04-expect-actual-socket/README.md)  
+对应文章：[`expect/actual` 像插座](../articles/04-expect-actual.md)
+
+---
+
+## 2026-11-18：第一条共享 StateFlow
+
+### 我原来以为
+
+- `suspend` 函数会自动切到后台线程。
+- 共享状态持有者应该自己创建 Main Scope，平台拿来即用。
+- 只要最终状态是 SAVED，就不必测试中间状态。
+
+### 实验实际发生了
+
+- Repository 与 UseCase 改成 suspend，但没有硬编码任何 dispatcher。
+- `DraftEditorStore` 接受平台宿主注入的 Scope，并只公开只读 StateFlow。
+- 保存用原子状态转换进入 SAVING，第二次提交返回 false。
+- commonTest 收集并验证 `IDLE → SAVING → SAVED`，还覆盖 REJECTED、FAILED 和字段编辑。
+- 5 条新测试在三个 targets 执行 15 次，累计 57/57 通过。
+
+### 原因
+
+- suspend 表达“可暂停并恢复”，不表达运行线程。
+- Scope 是生命周期所有权；共享对象不知道 Android Screen 或 SwiftUI View 何时销毁。
+- 声明式 UI 依赖状态序列，竞态通常发生在中间状态而非最终值。
+
+### 对工程决策的影响
+
+- Scope 和 dispatcher 都显式注入或由基础设施层负责，不创建不可控的全局协程。
+- StateFlow 用于可重建的当前状态；一次性事件另行建模。
+- 协程测试使用虚拟时间，不通过真实 sleep 等待异步结果。
+- Swift 消费 StateFlow 的体验仍未解决，后续必须单独评估桥接，而不能把“可导出”当成“好用”。
+
+对应决策记录：[ADR-0003](../docs/adr/0003-draft-editor-stateflow.md)  
+对应实验：[实验 05](../labs/05-first-shared-data-flow/README.md)  
+对应文章：[第一条跨越 Android 与 iOS 的数据流](../articles/05-first-shared-data-flow.md)
+
+---
+
+## 2026-11-18：同一个请求，三套 Ktor 引擎
+
+### 我原来以为
+
+- Ktor 跨平台意味着 Android 与 iOS 使用同一套底层网络实现。
+- 只要 catch 所有 Exception 并返回“网络错误”，UI 就足够简单。
+- 网络测试越真实越好，最好直接请求公网。
+- serialization compiler plugin 与 JSON runtime 应该使用相同版本号。
+
+### 实验实际发生了
+
+- 请求、Content Negotiation、JSON DTO 映射和错误分类位于 commonMain；JVM、Android、iOS 分别装配 CIO、Android、Darwin engine。
+- 401、503、418、坏 JSON、传输异常和取消需要不同处理；取消必须继续抛出。
+- MockEngine 在 commonTest 精确验证 URL、method、状态码与解码，不需要外网。
+- compiler plugin 跟随 Kotlin 2.4.21，kotlinx.serialization JSON runtime 独立使用 1.11.0。
+- 8 条新测试在三个 targets 执行 24 次，累计 81/81 通过；每个 target 的真实平台引擎也完成创建与关闭验证。
+
+### 原因
+
+- Ktor 统一客户端请求管线，engine 才负责进入具体平台网络栈。
+- HTTP 失败说明服务器已返回响应；坏 JSON 说明协议不兼容；传输失败说明未得到可用响应；取消则是结构化并发控制信号。
+- 单元测试应控制输入并精确声明证明范围，真实 TLS/权限/服务端契约属于后续集成测试。
+- 编译器插件负责生成 serializer，runtime 提供格式实现，它们是独立发布物。
+
+### 对工程决策的影响
+
+- 公共数据源返回稳定结果类型，不返回 HttpResponse，也不泄漏 Ktor/平台异常。
+- DTO 保持网络实现私有，通过映射隔离服务端 schema 与领域模型。
+- HttpClient 作为长生命周期资源复用并显式关闭，不在每次请求时创建。
+- engine 依赖只放进平台 source set；共同代码只保留薄工厂和共享配置。
+- MockEngine、fake data source 与真实测试服务器分别验证不同边界，不能互相冒充。
+
+对应决策记录：[ADR-0004](../docs/adr/0004-ktor-network-boundary.md)  
+对应实验：[实验 06](../labs/06-ktor-network/README.md)  
+对应文章：[Ktor：同一个请求，在三套网络引擎上发生了什么？](../articles/06-ktor-engines.md)
+
+---
+
+## 2026-11-19：数据库成为唯一事实来源
+
+### 我原来以为
+
+- 离线优先就是网络失败时读取一份缓存。
+- Room 已支持 KMP，所以当前 Intel iOS Simulator 也一定能使用。
+- 远端刷新成功后，先把 response 塞进 StateFlow，再顺便写数据库即可。
+- 时间戳更新者胜足以解决同步冲突。
+
+### 实验实际发生了
+
+- 数据库 Flow 成为 UI 唯一读取路径；本地保存和远端刷新都只修改数据库。
+- Room 3.0.3 有 Android、JVM、iosArm64 和 iosSimulatorArm64 variant，却没有当前所需 iosX64；SQLDelight 2.4.1 的 Native driver 仍提供 iosX64。
+- 本地保存立即持久化为 `PENDING_UPLOAD`；刷新事务永远不覆盖 pending 记录。
+- 已同步记录只接受更新时间更大的远端版本；批量合并只发布完整事务快照。
+- 9 条新测试在三个 targets 执行 27 次，累计 108/108 通过；migration verifier 通过。
+
+### 原因
+
+- 缓存只描述读取优化；offline-first 必须定义事实来源、mutation 持久性和同步恢复。
+- KMP 依赖解析匹配具体 target variant，“支持 iOS”不代表覆盖所有 Apple 架构。
+- 网络 response 是输入，数据库提交后的查询结果才是可恢复事实。
+- pending 状态保护尚未上传的用户意图；客户端时间戳仍不能表达多设备并发因果。
+
+### 对工程决策的影响
+
+- UI 不在 cache 与 response 之间切换，刷新失败也不清空本地列表。
+- 库选型必须结合 host、target、variant 和可运行测试，而不是只看平台宣传页。
+- 同步意图进入持久数据；将来删除使用 tombstone/outbox，不能直接删行。
+- 批量 merge 必须在 transaction 中完成，并测试观察者看不到中间状态。
+- 从 v1 提交 schema 基线，未来每次变更同时提交 migration 与数据语义测试。
+- 迁移到 Apple Silicon 后重新比较 Room 3 与 SQLDelight，不把这次 target 约束变成永久教条。
+
+对应决策记录：[ADR-0005](../docs/adr/0005-offline-first-sqldelight.md)  
+对应实验：[实验 07](../labs/07-offline-first/README.md)  
+对应文章：[离线优先：不是“加一层缓存”，而是重新决定谁说了算](../articles/07-offline-first.md)
+
+---
+
+## 2026-11-19：让 Kotlin Job 和 Swift Task 真正握手
+
+### 我原来以为
+
+- Kotlin `suspend` 能在 Swift 中写成 `async/await`，取消也会自然传播。
+- Swift 只要拿到 `Flow`，就能像 Kotlin 一样收集。
+- callback bridge 能返回数据就够了，生命周期稍后再处理。
+- Swift 示例写法看起来合理，就不必真的交给 Swift 编译器。
+
+### 实验实际发生了
+
+- 标准 Kotlin/Native framework 的 header 仍把 suspend 导出为 completion handler；Swift 5.5+ importer 额外提供 async 语法。
+- 原始 `Flow<List<ExperimentRecord>>` 只导出为协程 Flow protocol，无法直接获得带元素类型的 Swift `AsyncSequence`。
+- Apple source set 新增显式 bridge，每次订阅或刷新返回持有 Kotlin Job 的 `NativeCancellable`。
+- Swift 使用 `AsyncThrowingStream` 恢复 `for try await`，并在 `onTermination` 中取消 Kotlin Job。
+- refresh 分开表达稳定领域结果和意外基础设施异常；取消不会触发完成或失败 callback。
+- 5 条 iOS 专用测试通过；framework 成功链接；Swift 6 完整严格并发 type-check 通过。
+- 三端累计 113/113 测试通过，migration verifier 继续通过。
+
+### 原因
+
+- Kotlin Job 与 Swift Task 属于不同运行时的任务树，语法映射不等于取消关系映射。
+- 标准 Objective-C protocol 无法完整表达 Flow 的元素泛型与 collection 语义。
+- 持续异步工作需要明确的单项取消与整体关闭，不能等待 ARC/GC 间接清理。
+- `AsyncStream.onTermination` 是 Swift Task 生命周期通知 Kotlin collection 的标准接缝。
+- Swift 6 的 Sendable 与 actor 检查只对真正编译的 Swift 生效，Markdown 代码不能作为证据。
+
+### 对工程决策的影响
+
+- commonMain 保持 Flow / suspend，callback 只存在于 Apple 适配边界。
+- 取消作为一等协议测试：Task cancel → stream termination → token cancel → Job cancel。
+- 生产 callback 固定在 Kotlin Main dispatcher，Swift 状态继续使用 `@MainActor`。
+- generated header 与 Swift type-check 进入互操作门禁。
+- Swift Export 已能原生导出 Flow 为 AsyncSequence，但 2026-11 仍是 Alpha；建立 iOS direct-integration 壳后再做并行评估。
+- API 数量增长后再用数据比较手写桥、KMP-NativeCoroutines、SKIE 与 Swift Export。
+
+对应决策记录：[ADR-0006](../docs/adr/0006-swift-concurrency-bridge.md)  
+对应实验：[实验 08](../labs/08-coroutines-swift-concurrency/README.md)  
+对应文章：[Coroutines 遇见 Swift Concurrency](../articles/08-coroutines-meet-swift-concurrency.md)
+
+
+
+
+

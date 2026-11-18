@@ -1,0 +1,44 @@
+CREATE TABLE experiments (
+  id TEXT NOT NULL PRIMARY KEY,
+  title TEXT NOT NULL,
+  hypothesis TEXT NOT NULL,
+  notes TEXT NOT NULL,
+  updated_at_ms INTEGER NOT NULL,
+  sync_state TEXT NOT NULL CHECK (sync_state IN ('SYNCED', 'PENDING_UPLOAD'))
+);
+
+selectAll:
+SELECT id, title, hypothesis, notes, updated_at_ms, sync_state
+FROM experiments
+ORDER BY updated_at_ms DESC, id ASC;
+
+selectPendingUploads:
+SELECT id, title, hypothesis, notes, updated_at_ms, sync_state
+FROM experiments
+WHERE sync_state = 'PENDING_UPLOAD'
+ORDER BY updated_at_ms ASC, id ASC;
+
+selectById:
+SELECT id, title, hypothesis, notes, updated_at_ms, sync_state
+FROM experiments
+WHERE id = ?;
+
+insertRecord:
+INSERT INTO experiments(
+  id,
+  title,
+  hypothesis,
+  notes,
+  updated_at_ms,
+  sync_state
+)
+VALUES (?, ?, ?, ?, ?, ?);
+
+updateRecord:
+UPDATE experiments
+SET title = ?,
+    hypothesis = ?,
+    notes = ?,
+    updated_at_ms = ?,
+    sync_state = ?
+WHERE id = ?;

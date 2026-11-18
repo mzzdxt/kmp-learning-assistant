@@ -1,0 +1,8 @@
+.gradle/
+.gradle-user-home/
+**/.gradle/
+**/build/
+local.properties
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+.DS_Store
