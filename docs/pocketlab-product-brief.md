@@ -145,7 +145,7 @@ PocketLab 按责任和风险组织测试，而不追求固定的单元/集成/UI
 - Android Compose 测试只验证 state 渲染和 intent 转发，不复制共同业务分支；
 - iOS UI 测试使用唯一数据库冷启动真实 App，并验证首次刷新与幂等刷新；
 - Native 专用测试用弱引用证明纯 Kotlin 强引用环可被 tracing GC 回收；共同并发测试让两个 dispatcher 通过 `Mutex` 安全修改同一对象；
-- 当前共有 52 个不同测试场景、128/128 次目标执行，两种计数不得混用；
+- 当前共有 54 个不同测试场景、130/130 次目标执行，两种计数不得混用；
 - 异步测试使用虚拟时间、Compose 同步或条件等待，不使用固定 sleep。
 
 ## 当前 Native runtime 边界
@@ -162,4 +162,24 @@ Kotlin source → KLIB（序列化 IR + metadata）→ LLVM + Kotlin runtime
 - Kotlin tracing GC 能回收不可达的纯 Kotlin 引用环；Swift/Objective-C ARC 与 GC 组成的混合强引用环不能指望任一方自动打破；
 - callback、delegate 与订阅默认审计强弱引用方向，长任务和数据库/network owner 仍显式 `cancel` / `close`；
 - framework 只是链接输入，二进制大小与性能结论以 Release 最终 App、GC 日志和 Instruments 证据为准。
+
+## 当前 Swift API 边界
+
+共同业务 API、Apple framework API 与 Swift 产品 API 被视为三层独立契约：
+
+```text
+common model / use case
+→ Apple facade + snapshot / report
+→ hidden raw callbacks
+→ AsyncSequence + Swift value / enum
+→ SwiftUI
+```
+
+- `@HiddenFromObjC` 隐藏列表边界的共同 record、local-store 实现图与 sealed result，内部构造器不进入 framework；
+- `@ObjCName` 把 `Ios*` 实现名翻译为 `ExperimentListClient`、`PocketLabFeature` 等能力名；
+- callback 使用 `@ShouldRefineInSwift`，只作为 `__subscribe` / `__refresh` wrapper primitive；
+- SwiftUI 消费 `Experiment: Identifiable & Sendable` 和可穷尽 `RefreshOutcome`，不再动态 cast Kotlin subtype；
+- failure 通过稳定 code 传递，未知 code 安全退化；nullable status 使用 presence flag + primitive value；
+- Apple API gate 检查 header allow/deny symbols，并用 Swift 6 complete strict concurrency type-check App source；
+- Swift Export 已具备 enum、sealed、suspend 与 Flow 映射，但当前仍为 Alpha，先平行验证而不替换稳定发布路径。
 

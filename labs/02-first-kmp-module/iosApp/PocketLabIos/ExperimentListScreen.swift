@@ -1,5 +1,4 @@
 import SwiftUI
-@preconcurrency import PocketLabShared
 
 struct ExperimentListScreen: View {
     @ObservedObject var viewModel: ExperimentListViewModel
@@ -73,7 +72,7 @@ struct ExperimentListScreen: View {
 }
 
 private struct ExperimentRow: View {
-    let experiment: ExperimentRecord
+    let experiment: Experiment
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -81,7 +80,7 @@ private struct ExperimentRow: View {
                 Text(experiment.title)
                     .font(.title3.weight(.semibold))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                SyncBadge(state: experiment.syncState)
+                SyncBadge(isPendingUpload: experiment.isPendingUpload)
             }
 
             LabeledValue(label: "我的猜想", value: experiment.hypothesis)
@@ -124,17 +123,16 @@ private struct LabeledValue: View {
 }
 
 private struct SyncBadge: View {
-    let state: ExperimentSyncState
+    let isPendingUpload: Bool
 
     var body: some View {
-        let pending = state == ExperimentSyncState.pendingUpload
-        Text(pending ? "待上传" : "已同步")
+        Text(isPendingUpload ? "待上传" : "已同步")
             .font(.caption.weight(.semibold))
             .padding(.horizontal, 9)
             .padding(.vertical, 5)
             .background(
                 Capsule().fill(
-                    pending
+                    isPendingUpload
                         ? Color.orange.opacity(0.18)
                         : Color.green.opacity(0.16)
                 )

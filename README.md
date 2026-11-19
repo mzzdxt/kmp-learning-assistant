@@ -29,7 +29,9 @@
 21. 完成 [实验 10：为 KMP 建立能定位风险的测试金字塔](labs/10-testing-pyramid/README.md)。
 22. 阅读第十一篇文章：[Kotlin/Native 深水区：没有 JVM 之后，内存和并发到底谁管？](articles/11-kotlin-native-runtime.md)。
 23. 完成 [实验 11：拆开 Kotlin/Native 的编译、内存与并发边界](labs/11-kotlin-native-runtime/README.md)。
-24. 把疑问和实验结论写进 [学习日志](notes/learning-journal.md)，它们会成为后续文章最真实的素材。
+24. 阅读第十二篇文章：[为 Swift 设计 Kotlin API：能导出，不等于好用](articles/12-designing-kotlin-api-for-swift.md)。
+25. 完成 [实验 12：把“能从 Swift 调用”改造成“像 Swift 一样使用”](labs/12-swift-api-design/README.md)。
+26. 把疑问和实验结论写进 [学习日志](notes/learning-journal.md)，它们会成为后续文章最真实的素材。
 
 ## 仓库结构
 
@@ -66,6 +68,7 @@
 - [ADR-0007：原生 UI 配合平台 ViewModel，共享数据与业务内核](docs/adr/0007-native-ui-platform-viewmodels.md)
 - [ADR-0008：按风险分层，并在每个支持目标重新执行共同测试](docs/adr/0008-testing-strategy.md)
 - [ADR-0009：采用现代 Native 内存模型，并显式治理共享状态与跨语言生命周期](docs/adr/0009-native-memory-concurrency.md)
+- [ADR-0010：以 Apple facade 和 Swift value wrapper 管理导出 API](docs/adr/0010-swift-api-surface.md)
 - [实验 03 与边界矩阵](labs/03-sharing-boundary/README.md)
 - [实验 04 与平台适配器](labs/04-expect-actual-socket/README.md)
 - [实验 05 与共享状态流](labs/05-first-shared-data-flow/README.md)
@@ -75,13 +78,14 @@
 - [实验 09 与 Compose / SwiftUI 原生界面](labs/09-native-ui/README.md)
 - [实验 10 与多平台测试金字塔](labs/10-testing-pyramid/README.md)
 - [实验 11 与 Kotlin/Native runtime 边界](labs/11-kotlin-native-runtime/README.md)
+- [实验 12 与 Swift-friendly API surface](labs/12-swift-api-design/README.md)
 - 生产代码：`labs/02-first-kmp-module/shared/src/commonMain/kotlin/dev/kmpjourney/pocketlab`
 - Apple 互操作代码：`labs/02-first-kmp-module/shared/src/iosX64Main/kotlin/dev/kmpjourney/pocketlab/interop`
 - Android Compose 壳：`labs/02-first-kmp-module/androidApp`
 - iOS SwiftUI 壳：`labs/02-first-kmp-module/iosApp`
 - 共享测试：`labs/02-first-kmp-module/shared/src/commonTest/kotlin/dev/kmpjourney/pocketlab`
 
-目前 JVM 与 Android Host 各运行 39 条测试，iOS x64 运行 45 条测试，共享模块合计 123/123；Android ViewModel 2 条、Compose UI 2 条、iOS UI 1 条，总计 128/128 次自动化执行。按源码统计共有 52 个不同测试场景，其中 38 个 `commonTest` 在三个目标重复执行；两组数字分别表达行为覆盖与目标兼容证据。共同层集成测试已穿过 demo remote、Refresh UseCase、真实 SQLDelight Repository、transaction 与 Flow；新增并发实验让两个 dispatcher 通过 `Mutex` 安全修改同一对象，Native 专用实验用弱引用验证纯 Kotlin 强引用环可被 tracing GC 回收。Android Compose semantics 测试在 API 34 模拟器通过；iOS XCTest 则真实冷启动 SwiftUI App，验证 3 条数据库记录与幂等刷新。SQLDelight migration verifier、Android APK、Debug/Release Apple framework 和 Swift 6 Xcode App 继续完成构建。
+目前 JVM 与 Android Host 各运行 39 条测试，iOS x64 运行 47 条测试，共享模块合计 125/125；Android ViewModel 2 条、Compose UI 2 条、iOS UI 1 条，总计 130/130 次自动化执行。按源码统计共有 54 个不同测试场景，其中 38 个 `commonTest` 在三个目标重复执行；两组数字分别表达行为覆盖与目标兼容证据。共同层集成测试已穿过 demo remote、Refresh UseCase、真实 SQLDelight Repository、transaction 与 Flow；Native 专用实验覆盖 GC 引用环、Swift callback/cancellation、Apple snapshot 与稳定 failure report。Apple API gate 会检查 Swift names、隐藏实现类型与 `swift_private` callbacks，并用 Swift 6 complete strict concurrency 编译完整 SwiftUI source。Android Compose semantics 测试在 API 34 模拟器通过；iOS XCTest 则真实冷启动 SwiftUI App，验证 3 条数据库记录与幂等刷新。SQLDelight migration verifier、Android APK、Debug/Release Apple framework 和最终 Xcode link 继续完成构建。
 
 ## 当前环境快照
 
@@ -110,6 +114,7 @@
 - [Kotlin/Native 与 Swift/Objective-C ARC](https://kotlinlang.org/docs/native-arc-integration.html)
 - [迁移到现代 Kotlin/Native memory manager](https://kotlinlang.org/docs/native-migration-guide.html)
 - [Kotlin Swift Export](https://kotlinlang.org/docs/native-swift-export.html)
+- [Kotlin/Native Objective-C API refinement](https://kotlinlang.org/docs/native-objc-interop.html#hide-kotlin-declarations-from-objective-c-and-swift)
 - [Apple AsyncStream](https://developer.apple.com/documentation/swift/asyncstream)
 - [Kotlin Multiplatform 运行测试](https://kotlinlang.org/docs/multiplatform/multiplatform-run-tests.html)
 - [Android Compose 测试](https://developer.android.com/develop/ui/compose/testing)

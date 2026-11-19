@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.experimental.ExperimentalObjCName::class)
+
 package dev.kmpjourney.pocketlab.interop
 
 import dev.kmpjourney.pocketlab.data.PocketLabDatabaseHandle
@@ -8,8 +10,10 @@ import dev.kmpjourney.pocketlab.network.ExperimentRemoteDataSource
 import dev.kmpjourney.pocketlab.network.PocketLabNetwork
 import dev.kmpjourney.pocketlab.network.createPlatformPocketLabNetwork
 import dev.kmpjourney.pocketlab.sync.RefreshExperimentsUseCase
+import kotlin.native.ObjCName
 
 /** Apple composition root: Swift owns one feature and closes it at the same boundary. */
+@ObjCName(swiftName = "PocketLabFeature")
 class IosPocketLabFeature internal constructor(
     val experimentList: IosExperimentListBridge,
     private val databaseHandle: PocketLabDatabaseHandle,
@@ -26,6 +30,7 @@ class IosPocketLabFeature internal constructor(
     }
 }
 
+@ObjCName(swiftName = "PocketLabFeatures")
 object IosPocketLabFeatures {
     fun demo(databaseName: String): IosPocketLabFeature = createFeature(
         databaseName = databaseName,

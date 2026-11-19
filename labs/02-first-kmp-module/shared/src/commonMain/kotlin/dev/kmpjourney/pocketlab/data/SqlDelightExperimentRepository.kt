@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+
 package dev.kmpjourney.pocketlab.data
 
 import app.cash.sqldelight.coroutines.asFlow
@@ -10,7 +12,9 @@ import dev.kmpjourney.pocketlab.ServerExperimentSnapshot
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlin.native.HiddenFromObjC
 
+@HiddenFromObjC
 class SqlDelightExperimentRepository(
     private val database: PocketLabSqlDatabase,
     private val queryDispatcher: CoroutineDispatcher = Dispatchers.Default,

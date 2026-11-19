@@ -422,6 +422,54 @@
 对应文章：[Kotlin/Native 深水区：没有 JVM 之后，内存和并发到底谁管？](../articles/11-kotlin-native-runtime.md)
 
 
+---
+
+## 2026-11-20：framework 能导出，不代表 Swift 愿意使用
+
+### 我原来以为
+
+- Kotlin 声明是 `public`，自然就应该进入 Apple framework。
+- Swift name 好看以后，API 就已经 Swift-friendly。
+- Kotlin sealed result 到 Swift 后仍然能穷尽 `switch`。
+- 给 Kotlin payload 套一个通用 `@unchecked Sendable`，Swift 6 问题就解决了。
+- Swift Export 功能越来越强，可以立刻替换 Objective-C framework 路径。
+
+### 实验实际发生了
+
+- 原始 2,834 行 header 暴露 `ExperimentRecord`、共同 sealed result、bridge 组装依赖和 raw callback。
+- Apple DTO 与 KDoc 先让 header 增至 2,888 行；用 `internal` / `@HiddenFromObjC` 收窄类型图后降到 2,267 行。
+- 只隐藏 `ExperimentLocalStore` 而保留公开实现类时，Native 编译器因可见性继承图不一致而失败；隐藏实现类后恢复。
+- `@ObjCName` 让 Swift 看见 `ExperimentListClient`、`PocketLabFeature`、`CancellationToken`，Objective-C symbol 仍保持唯一前缀。
+- `@ShouldRefineInSwift` 让 raw callback 变成 `swift_private`；Swift wrapper 仍可通过 `__subscribe` / `__refresh` 使用。
+- Kotlin snapshot 被立即复制成 `Experiment: Identifiable, Sendable`，业务 payload 不再需要 unchecked wrapper。
+- Kotlin report 被映射成可穷尽 `RefreshOutcome`，failure 使用稳定 code 和 `.unknown` 退化。
+- 新增 2 个 iOS API mapping 场景后，iOS x64 达到 47/47；全矩阵共有 54 个不同场景、130/130 次执行。
+
+### 原因
+
+- Kotlin visibility、Objective-C export visibility 与 Swift 产品 API 是三套不同决策。
+- Objective-C protocol/class 无法完整表达 Kotlin sealed hierarchy、nullable primitive 和所有 generic 语义。
+- `@unchecked Sendable` 只关闭检查，不创造隔离；复制为 Swift value 才恢复静态保证。
+- API 兼容不仅是 symbol 存在，还包括 Swift source name、参数标签、未知值、错误、取消和生命周期。
+- Swift Export 当前已支持更多原生映射，但仍是 Alpha；工具能力与发布风险需要用同一组门禁比较。
+
+### 对工程决策的影响
+
+- Apple API 采用显式 allowlist 心智模型；内部类型默认不导出。
+- Swift 只消费 Apple snapshot/report 与平台 value/enum，不直接依赖数据库 record 或共同 sealed hierarchy。
+- raw callbacks 保留为隐藏实现原语，公开体验由 AsyncSequence/async wrapper 提供。
+- stable failure code 必须有 unknown 路径；平台文案不从 Kotlin diagnostic message 推导。
+- `@unchecked Sendable` 只允许出现在受锁保护的 cancellation box 等窄 FFI 边界。
+- `scripts/verify-apple-api.sh`、Swift 6 strict type-check、adapter tests 和 UI runtime 共同构成发布证据。
+- 未来拆出独立 `apple-api` module，并平行评估 Swift Export，不在当前版本直接切换。
+
+对应决策记录：[ADR-0010](../docs/adr/0010-swift-api-surface.md)
+
+对应实验：[实验 12](../labs/12-swift-api-design/README.md)
+
+对应文章：[为 Swift 设计 Kotlin API：能导出，不等于好用](../articles/12-designing-kotlin-api-for-swift.md)
+
+
 
 
 

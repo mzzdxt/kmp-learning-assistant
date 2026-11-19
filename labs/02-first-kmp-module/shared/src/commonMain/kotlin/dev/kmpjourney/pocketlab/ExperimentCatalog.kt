@@ -1,12 +1,17 @@
+@file:OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+
 package dev.kmpjourney.pocketlab
 
 import kotlinx.coroutines.flow.Flow
+import kotlin.native.HiddenFromObjC
 
+@HiddenFromObjC
 enum class ExperimentSyncState {
     SYNCED,
     PENDING_UPLOAD,
 }
 
+@HiddenFromObjC
 data class ExperimentRecord(
     val id: String,
     val title: String,
@@ -17,6 +22,7 @@ data class ExperimentRecord(
 )
 
 /** A platform-neutral snapshot that is safe to merge into the local source of truth. */
+@HiddenFromObjC
 data class ServerExperimentSnapshot(
     val id: String,
     val title: String,
@@ -25,6 +31,7 @@ data class ServerExperimentSnapshot(
     val updatedAtEpochMilliseconds: Long,
 )
 
+@HiddenFromObjC
 interface ExperimentLocalStore : ExperimentRepository {
     fun observeAll(): Flow<List<ExperimentRecord>>
 

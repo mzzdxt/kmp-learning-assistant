@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+
 package dev.kmpjourney.pocketlab.sync
 
 import dev.kmpjourney.pocketlab.ExperimentLocalStore
@@ -5,7 +7,9 @@ import dev.kmpjourney.pocketlab.ServerExperimentSnapshot
 import dev.kmpjourney.pocketlab.network.ExperimentRemoteDataSource
 import dev.kmpjourney.pocketlab.network.RemoteExperimentsResult
 import dev.kmpjourney.pocketlab.network.RemoteFailureReason
+import kotlin.native.HiddenFromObjC
 
+@HiddenFromObjC
 enum class RefreshFailureReason {
     UNAUTHORIZED,
     SERVER,
@@ -14,6 +18,7 @@ enum class RefreshFailureReason {
     CONNECTION,
 }
 
+@HiddenFromObjC
 sealed interface RefreshExperimentsResult {
     data class Applied(
         val receivedCount: Int,
@@ -26,6 +31,7 @@ sealed interface RefreshExperimentsResult {
     ) : RefreshExperimentsResult
 }
 
+@HiddenFromObjC
 class RefreshExperimentsUseCase(
     private val remote: ExperimentRemoteDataSource,
     private val local: ExperimentLocalStore,

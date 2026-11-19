@@ -8,7 +8,7 @@ import dev.kmpjourney.pocketlab.ServerExperimentSnapshot
 import dev.kmpjourney.pocketlab.network.ExperimentRemoteDataSource
 import dev.kmpjourney.pocketlab.network.RemoteExperiment
 import dev.kmpjourney.pocketlab.network.RemoteExperimentsResult
-import dev.kmpjourney.pocketlab.sync.RefreshExperimentsResult
+import dev.kmpjourney.pocketlab.network.RemoteFailureReason
 import dev.kmpjourney.pocketlab.sync.RefreshExperimentsUseCase
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,10 +30,10 @@ class IosExperimentListBridgeTest {
         val local = FakeLocalStore()
         val bridge = bridge(local, successfulRemote(), UnconfinedTestDispatcher(testScheduler))
         val received = mutableListOf<List<String>>()
-        val failures = mutableListOf<String>()
+        val failures = mutableListOf<IosInteropFailure>()
 
         val token = bridge.subscribe(
-            onChange = { records -> received += records.map { it.id } },
+            onChange = { snapshots -> received += snapshots.map { it.id } },
             onFailure = failures::add,
         )
         runCurrent()
@@ -53,21 +53,74 @@ class IosExperimentListBridgeTest {
     fun refreshReportsResultAndWritesThroughTheSharedUseCase() = runTest {
         val local = FakeLocalStore()
         val bridge = bridge(local, successfulRemote(), UnconfinedTestDispatcher(testScheduler))
-        val results = mutableListOf<RefreshExperimentsResult>()
+        val results = mutableListOf<IosRefreshReport>()
 
-        val failures = mutableListOf<String>()
+        val failures = mutableListOf<IosInteropFailure>()
         val token = bridge.refresh(results::add, failures::add)
         runCurrent()
 
         assertFalse(token.isCancelled)
-        assertEquals(
-            listOf<RefreshExperimentsResult>(
-                RefreshExperimentsResult.Applied(receivedCount = 1, changedCount = 1),
-            ),
-            results,
-        )
+        assertEquals(1, results.single().receivedCount)
+        assertEquals(1, results.single().changedCount)
+        assertTrue(results.single().isSuccessful)
+        assertEquals(null, results.single().failureCode)
         assertEquals(listOf("remote-1"), local.value.map { it.id })
         assertEquals(emptyList(), failures)
+    }
+
+    @Test
+    fun subscriptionMapsSharedRecordToAStableAppleSnapshot() = runTest {
+        val local = FakeLocalStore()
+        val bridge = bridge(local, successfulRemote(), UnconfinedTestDispatcher(testScheduler))
+        val snapshots = mutableListOf<IosExperimentSnapshot>()
+
+        bridge.subscribe(
+            onChange = { values -> snapshots += values },
+            onFailure = { failure -> error("Unexpected failure callback: ${failure.message}") },
+        )
+        runCurrent()
+        local.emit(
+            ExperimentRecord(
+                id = "pending-1",
+                title = "Pending",
+                hypothesis = "hypothesis",
+                notes = "notes",
+                updatedAtEpochMilliseconds = 42,
+                syncState = ExperimentSyncState.PENDING_UPLOAD,
+            ),
+        )
+        runCurrent()
+
+        val snapshot = snapshots.single()
+        assertEquals("pending-1", snapshot.id)
+        assertEquals(42, snapshot.updatedAtEpochMilliseconds)
+        assertTrue(snapshot.isPendingUpload)
+    }
+
+    @Test
+    fun failedRefreshUsesStableCodeAndUnboxedStatusContract() = runTest {
+        val local = FakeLocalStore()
+        val remote = object : ExperimentRemoteDataSource {
+            override suspend fun fetchExperiments(): RemoteExperimentsResult =
+                RemoteExperimentsResult.Failure(
+                    reason = RemoteFailureReason.SERVER,
+                    statusCode = 503,
+                )
+        }
+        val bridge = bridge(local, remote, UnconfinedTestDispatcher(testScheduler))
+        val reports = mutableListOf<IosRefreshReport>()
+
+        bridge.refresh(
+            onResult = reports::add,
+            onFailure = { failure -> error("Unexpected failure callback: ${failure.message}") },
+        )
+        runCurrent()
+
+        val report = reports.single()
+        assertFalse(report.isSuccessful)
+        assertEquals("server", report.failureCode)
+        assertTrue(report.hasFailureStatusCode)
+        assertEquals(503, report.failureStatusCode)
     }
 
     @Test
@@ -79,11 +132,11 @@ class IosExperimentListBridgeTest {
             }
         }
         val bridge = bridge(local, remote, UnconfinedTestDispatcher(testScheduler))
-        val results = mutableListOf<RefreshExperimentsResult>()
+        val results = mutableListOf<IosRefreshReport>()
 
         val token = bridge.refresh(
             onResult = results::add,
-            onFailure = { message -> error("Unexpected failure callback: $message") },
+            onFailure = { failure -> error("Unexpected failure callback: ${failure.message}") },
         )
         runCurrent()
         token.cancel()
@@ -101,14 +154,15 @@ class IosExperimentListBridgeTest {
                 error("database unavailable")
         }
         val bridge = bridge(local, remote, UnconfinedTestDispatcher(testScheduler))
-        val results = mutableListOf<RefreshExperimentsResult>()
-        val failures = mutableListOf<String>()
+        val results = mutableListOf<IosRefreshReport>()
+        val failures = mutableListOf<IosInteropFailure>()
 
         bridge.refresh(results::add, failures::add)
         runCurrent()
 
         assertEquals(emptyList(), results)
-        assertEquals(listOf("database unavailable"), failures)
+        assertEquals(listOf("refresh_failed"), failures.map { it.code })
+        assertEquals(listOf("database unavailable"), failures.map { it.message })
     }
 
     @Test

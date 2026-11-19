@@ -5,7 +5,7 @@ import SwiftUI
 @MainActor
 struct PocketLabIosApp: App {
     @StateObject private var viewModel = ExperimentListViewModel(
-        feature: IosPocketLabFeatures.shared.demo(
+        feature: PocketLabFeatures.shared.demo(
             databaseName: ProcessInfo.processInfo.environment["POCKETLAB_DATABASE_NAME"]
                 .flatMap { $0.isEmpty ? nil : $0 }
                 ?? "pocketlab-demo.db"
