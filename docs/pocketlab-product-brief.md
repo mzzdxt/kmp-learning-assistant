@@ -49,6 +49,7 @@ PocketLab 是一个离线优先的个人实验记录器：把“我猜……”�
 - 同一组测试在 JVM、Android Host 与 iOS Simulator 通过。
 - Apple 专用互操作行为在 iOS Native 测试中验证，Swift 包装通过 Swift 6 严格并发 type-check。
 - Android 与 iOS 宿主工程都能编译、最终链接并在模拟器启动；平台 ViewModel 不复制刷新与合并规则。
+- 共同测试在 JVM、Android Host 与 iOS Native 分别执行；平台 UI 由 Compose semantics 与 XCTest UI smoke 补齐。
 
 ## 当前共享状态流
 
@@ -128,4 +129,21 @@ SwiftUI → @MainActor ObservableObject ┘
 - iOS `IosPocketLabFeature` 显式拥有并关闭 bridge、network 与 database。
 - 当前 Swift 6 FFI `Sendable` 豁免被限制在 Main dispatcher / MainActor 审计过的窄盒子。
 - Compose Multiplatform UI 与共享 ViewModel 都保留为未来可评估方案，而非默认禁用。
+
+## 当前测试边界
+
+PocketLab 按责任和风险组织测试，而不追求固定的单元/集成/UI 百分比：
+
+```text
+共同规则与状态机 → 共同层真实数据库集成 → 平台 adapter / interop
+→ Android ViewModel / Compose → SwiftUI XCTest smoke
+```
+
+- 37 个 `commonTest` 分别在 JVM、Android Host 与 iOS x64 执行；
+- 共同集成测试使用真实 Refresh UseCase、SQLDelight Repository、transaction 与 Flow，外部 remote 保持确定性；
+- iOS 专用测试覆盖 callback、refresh、取消、异常与资源关闭；
+- Android Compose 测试只验证 state 渲染和 intent 转发，不复制共同业务分支；
+- iOS UI 测试使用唯一数据库冷启动真实 App，并验证首次刷新与幂等刷新；
+- 当前共有 50 个不同测试场景、124/124 次目标执行，两种计数不得混用；
+- 异步测试使用虚拟时间、Compose 同步或条件等待，不使用固定 sleep。
 

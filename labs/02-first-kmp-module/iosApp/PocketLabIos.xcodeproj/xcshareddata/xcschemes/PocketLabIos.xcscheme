@@ -37,6 +37,16 @@
          </BuildableReference>
       </MacroExpansion>
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "EA34DCB193443DE015841A13"
+               BuildableName = "PocketLabIosUITests.xctest"
+               BlueprintName = "PocketLabIosUITests"
+               ReferencedContainer = "container:PocketLabIos.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

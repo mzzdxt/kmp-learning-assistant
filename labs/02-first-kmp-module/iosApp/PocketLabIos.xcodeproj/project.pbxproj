@@ -8,18 +8,32 @@
 
 /* Begin PBXBuildFile section */
 		0281B56854B77E2550378C3F /* ExperimentListScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEB9EE40D0D518002EBAED9E /* ExperimentListScreen.swift */; };
+		0EBE6951ACC1F77FD8879A75 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 63BEEF5D6AA4CE5E6C99AEA0 /* Foundation.framework */; };
 		27650B61C1BB82A2D7581E93 /* PocketLabIosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B2BACE7ABF80771F7D554B /* PocketLabIosApp.swift */; };
 		A9E518354F070C9C91BD0BD2 /* ExperimentListAsyncSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE25D89688E1E5BB405FF66F /* ExperimentListAsyncSequence.swift */; };
+		CF64EA57CD00EF806975B7D9 /* PocketLabIosUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9813F1C14C0C46837BA5779A /* PocketLabIosUITests.swift */; };
 		D717FAEFC5BCBB93E98B14BF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 63BEEF5D6AA4CE5E6C99AEA0 /* Foundation.framework */; };
 		F42A8C7FFAA32BACE5D66185 /* ExperimentListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52973B109FCC2293725F5D37 /* ExperimentListViewModel.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D299CC1BABC59B2CC3FD128C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6E888798F3972072296E212A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CE2F629AE2CAC20AFFC3B8F7;
+			remoteInfo = PocketLabIos;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		07B2BACE7ABF80771F7D554B /* PocketLabIosApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PocketLabIosApp.swift; sourceTree = "<group>"; };
 		41EDC275C5E6929B33C2E629 /* PocketLabIos.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PocketLabIos.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		52973B109FCC2293725F5D37 /* ExperimentListViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExperimentListViewModel.swift; sourceTree = "<group>"; };
 		63BEEF5D6AA4CE5E6C99AEA0 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		9813F1C14C0C46837BA5779A /* PocketLabIosUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PocketLabIosUITests.swift; sourceTree = "<group>"; };
 		AEB9EE40D0D518002EBAED9E /* ExperimentListScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExperimentListScreen.swift; sourceTree = "<group>"; };
+		E46A195AFD948B68F178AA77 /* PocketLabIosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PocketLabIosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EE25D89688E1E5BB405FF66F /* ExperimentListAsyncSequence.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExperimentListAsyncSequence.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -29,6 +43,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				D717FAEFC5BCBB93E98B14BF /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D38AA8307DF7E281540A551A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0EBE6951ACC1F77FD8879A75 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -51,6 +73,7 @@
 			isa = PBXGroup;
 			children = (
 				41EDC275C5E6929B33C2E629 /* PocketLabIos.app */,
+				E46A195AFD948B68F178AA77 /* PocketLabIosUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,6 +84,15 @@
 				63BEEF5D6AA4CE5E6C99AEA0 /* Foundation.framework */,
 			);
 			name = iOS;
+			sourceTree = "<group>";
+		};
+		AA2F292C2F14940D57CC5AFC /* PocketLabIosUITests */ = {
+			isa = PBXGroup;
+			children = (
+				9813F1C14C0C46837BA5779A /* PocketLabIosUITests.swift */,
+			);
+			name = PocketLabIosUITests;
+			path = PocketLabIosUITests;
 			sourceTree = "<group>";
 		};
 		C4F912A10C01D25DFC329A9E /* Frameworks */ = {
@@ -77,6 +109,7 @@
 				325BADF1496A4CC46D911A06 /* Products */,
 				C4F912A10C01D25DFC329A9E /* Frameworks */,
 				110BBA2F437973DF10F8C68A /* PocketLabIos */,
+				AA2F292C2F14940D57CC5AFC /* PocketLabIosUITests */,
 			);
 			sourceTree = "<group>";
 		};
@@ -101,6 +134,24 @@
 			productReference = 41EDC275C5E6929B33C2E629 /* PocketLabIos.app */;
 			productType = "com.apple.product-type.application";
 		};
+		EA34DCB193443DE015841A13 /* PocketLabIosUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EEF65FD23417CA8B50801DF1 /* Build configuration list for PBXNativeTarget "PocketLabIosUITests" */;
+			buildPhases = (
+				146D36BC5A86A88270BDD536 /* Sources */,
+				D38AA8307DF7E281540A551A /* Frameworks */,
+				35A892EAFDFD43B1326C784F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				562077FBD2C7BCE68A7394BE /* PBXTargetDependency */,
+			);
+			name = PocketLabIosUITests;
+			productName = PocketLabIosUITests;
+			productReference = E46A195AFD948B68F178AA77 /* PocketLabIosUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -124,11 +175,19 @@
 			projectRoot = "";
 			targets = (
 				CE2F629AE2CAC20AFFC3B8F7 /* PocketLabIos */,
+				EA34DCB193443DE015841A13 /* PocketLabIosUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		35A892EAFDFD43B1326C784F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8D6020766D43465D38F9F049 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -161,6 +220,14 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		146D36BC5A86A88270BDD536 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CF64EA57CD00EF806975B7D9 /* PocketLabIosUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		58CA1DCCCD300CA0BC5191CA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -173,6 +240,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		562077FBD2C7BCE68A7394BE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = PocketLabIos;
+			target = CE2F629AE2CAC20AFFC3B8F7 /* PocketLabIos */;
+			targetProxy = D299CC1BABC59B2CC3FD128C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		142C607EE6028FCC44695F20 /* Debug */ = {
@@ -208,6 +284,22 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
+		};
+		610F1B2AAF3F6EBBBF99970A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.kmpjourney.pocketlab.ios.uitests;
+				PRODUCT_NAME = PocketLabIosUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PocketLabIos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
 		};
 		7EBDAC22C308ECBF2A186B6B /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -306,6 +398,21 @@
 			};
 			name = Debug;
 		};
+		DCBA2FD0BBAECC4C9F7E7298 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.kmpjourney.pocketlab.ios.uitests;
+				PRODUCT_NAME = PocketLabIosUITests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = PocketLabIos;
+			};
+			name = Debug;
+		};
 		E776C7CDC66728701E76CD18 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -378,6 +485,15 @@
 			buildConfigurations = (
 				7EBDAC22C308ECBF2A186B6B /* Release */,
 				142C607EE6028FCC44695F20 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		EEF65FD23417CA8B50801DF1 /* Build configuration list for PBXNativeTarget "PocketLabIosUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				610F1B2AAF3F6EBBBF99970A /* Release */,
+				DCBA2FD0BBAECC4C9F7E7298 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

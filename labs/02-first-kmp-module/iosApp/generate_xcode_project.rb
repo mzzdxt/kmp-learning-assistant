@@ -9,12 +9,20 @@ abort("#{project_path} already exists; delete it explicitly before regenerating"
 
 project = Xcodeproj::Project.new(project_path)
 target = project.new_target(:application, "PocketLabIos", :ios, "17.0")
+ui_test_target = project.new_target(:ui_test_bundle, "PocketLabIosUITests", :ios, "17.0")
 
 source_group = project.main_group.new_group("PocketLabIos", "PocketLabIos")
 Dir[File.join(root, "PocketLabIos", "*.swift")].sort.each do |source|
   reference = source_group.new_file(File.basename(source))
   target.source_build_phase.add_file_reference(reference)
 end
+
+ui_test_group = project.main_group.new_group("PocketLabIosUITests", "PocketLabIosUITests")
+Dir[File.join(root, "PocketLabIosUITests", "*.swift")].sort.each do |source|
+  reference = ui_test_group.new_file(File.basename(source))
+  ui_test_target.source_build_phase.add_file_reference(reference)
+end
+ui_test_target.add_dependency(target)
 
 script = target.new_shell_script_build_phase("Compile Kotlin Framework")
 script.shell_script = <<~SH
@@ -54,8 +62,20 @@ target.build_configurations.each do |configuration|
   settings["MARKETING_VERSION"] = "1.0"
 end
 
+ui_test_target.build_configurations.each do |configuration|
+  settings = configuration.build_settings
+  settings["PRODUCT_BUNDLE_IDENTIFIER"] = "dev.kmpjourney.pocketlab.ios.uitests"
+  settings["PRODUCT_NAME"] = "PocketLabIosUITests"
+  settings["SWIFT_VERSION"] = "6.0"
+  settings["IPHONEOS_DEPLOYMENT_TARGET"] = "17.0"
+  settings["TARGETED_DEVICE_FAMILY"] = "1,2"
+  settings["GENERATE_INFOPLIST_FILE"] = "YES"
+  settings["TEST_TARGET_NAME"] = "PocketLabIos"
+end
+
 scheme = Xcodeproj::XCScheme.new
 scheme.add_build_target(target)
+scheme.add_test_target(ui_test_target)
 scheme.set_launch_target(target)
 scheme.save_as(project_path, "PocketLabIos", true)
 

@@ -25,7 +25,9 @@
 17. 完成 [实验 08：让 Kotlin Job 和 Swift Task 真正握手](labs/08-coroutines-swift-concurrency/README.md)。
 18. 阅读第九篇文章：[Android Compose + SwiftUI：UI 不共享也能合作愉快](articles/09-native-ui.md)。
 19. 完成 [实验 09：用 Compose 与 SwiftUI 展示同一份离线事实](labs/09-native-ui/README.md)。
-20. 把疑问和实验结论写进 [学习日志](notes/learning-journal.md)，它们会成为后续文章最真实的素材。
+20. 阅读第十篇文章：[KMP 测试金字塔：一次验证，两端真的能放心吗？](articles/10-testing-pyramid.md)。
+21. 完成 [实验 10：为 KMP 建立能定位风险的测试金字塔](labs/10-testing-pyramid/README.md)。
+22. 把疑问和实验结论写进 [学习日志](notes/learning-journal.md)，它们会成为后续文章最真实的素材。
 
 ## 仓库结构
 
@@ -60,6 +62,7 @@
 - [ADR-0005：以本地数据库为事实来源，并用 SQLDelight 保持三端可验证](docs/adr/0005-offline-first-sqldelight.md)
 - [ADR-0006：保留 Kotlin 原生异步模型，在 Apple 边界显式桥接取消](docs/adr/0006-swift-concurrency-bridge.md)
 - [ADR-0007：原生 UI 配合平台 ViewModel，共享数据与业务内核](docs/adr/0007-native-ui-platform-viewmodels.md)
+- [ADR-0008：按风险分层，并在每个支持目标重新执行共同测试](docs/adr/0008-testing-strategy.md)
 - [实验 03 与边界矩阵](labs/03-sharing-boundary/README.md)
 - [实验 04 与平台适配器](labs/04-expect-actual-socket/README.md)
 - [实验 05 与共享状态流](labs/05-first-shared-data-flow/README.md)
@@ -67,13 +70,14 @@
 - [实验 07 与离线优先数据库](labs/07-offline-first/README.md)
 - [实验 08 与 Swift Concurrency 取消桥](labs/08-coroutines-swift-concurrency/README.md)
 - [实验 09 与 Compose / SwiftUI 原生界面](labs/09-native-ui/README.md)
+- [实验 10 与多平台测试金字塔](labs/10-testing-pyramid/README.md)
 - 生产代码：`labs/02-first-kmp-module/shared/src/commonMain/kotlin/dev/kmpjourney/pocketlab`
 - Apple 互操作代码：`labs/02-first-kmp-module/shared/src/iosX64Main/kotlin/dev/kmpjourney/pocketlab/interop`
 - Android Compose 壳：`labs/02-first-kmp-module/androidApp`
 - iOS SwiftUI 壳：`labs/02-first-kmp-module/iosApp`
 - 共享测试：`labs/02-first-kmp-module/shared/src/commonTest/kotlin/dev/kmpjourney/pocketlab`
 
-目前 JVM 与 Android Host 各运行 37 条测试，iOS x64 运行 42 条测试，共享模块合计 116/116；Android ViewModel 另有 2 条单测，总计 118/118 通过。数据库层共同测试覆盖本地优先保存、SQLDelight Flow、pending 保护、版本合并与事务可见性；5 条 iOS 专用测试覆盖 Flow callback、refresh、单任务取消、异常通道与整体关闭。SQLDelight migration verifier、Android APK、Apple framework 和 Swift 6 Xcode App 都完成构建。PocketLab 已在 Android API 34 与 iOS 17.5 模拟器真实启动，并从同一共享 demo 数据源展示 3 条数据库记录。
+目前 JVM 与 Android Host 各运行 38 条测试，iOS x64 运行 43 条测试，共享模块合计 119/119；Android ViewModel 2 条、Compose UI 2 条、iOS UI 1 条，总计 124/124 次自动化执行。按源码统计共有 50 个不同测试场景，其中 37 个 `commonTest` 在三个目标重复执行；两组数字分别表达行为覆盖与目标兼容证据。共同层集成测试已穿过 demo remote、Refresh UseCase、真实 SQLDelight Repository、transaction 与 Flow；Android Compose semantics 测试在 API 34 模拟器通过；iOS XCTest 则真实冷启动 SwiftUI App，验证 3 条数据库记录与幂等刷新。SQLDelight migration verifier、Android APK、Apple framework 和 Swift 6 Xcode App 继续完成构建。
 
 ## 当前环境快照
 
@@ -100,4 +104,7 @@
 - [Kotlin/Native 与 Swift/Objective-C 互操作](https://kotlinlang.org/docs/native-objc-interop.html)
 - [Kotlin Swift Export](https://kotlinlang.org/docs/native-swift-export.html)
 - [Apple AsyncStream](https://developer.apple.com/documentation/swift/asyncstream)
+- [Kotlin Multiplatform 运行测试](https://kotlinlang.org/docs/multiplatform/multiplatform-run-tests.html)
+- [Android Compose 测试](https://developer.android.com/develop/ui/compose/testing)
+- [Apple Testing with Xcode](https://developer.apple.com/documentation/xcode/testing)
 

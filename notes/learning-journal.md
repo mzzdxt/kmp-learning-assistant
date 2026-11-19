@@ -337,6 +337,49 @@
 对应文章：[Android Compose + SwiftUI：UI 不共享也能合作愉快](../articles/09-native-ui.md)
 
 
+---
+
+## 2026-11-19：一次编写测试，不等于只执行一次
+
+### 我原来以为
+
+- `commonTest` 跑绿一次，就可以把它算作 Android 与 iOS 都验证过。
+- 端到端测试最真实，重要分支都应该尽量从 UI 走一遍。
+- 测试数量只有一种口径，报告总数越大越安全。
+- UI 异步测试等一两秒最省事。
+
+### 实验实际发生了
+
+- 37 个共同场景分别进入 JVM、Android Host 与 iOS x64，形成 111 次执行；共同源码只有一份，运行证据有三份。
+- 新增共同集成测试，真实穿过 demo remote、Refresh UseCase、SQLDelight Repository、transaction 与 Flow；第一次刷新写入 3 条完整快照，第二次刷新变化数为 0。
+- Android Compose 新增 2 条 instrumentation 测试，在 API 34 模拟器验证 state 渲染与刷新 intent。
+- iOS 新增 XCTest UI target，使用唯一数据库冷启动真实 SwiftUI App，验证 3 条记录、首次同步提示和幂等刷新。
+- 当前共有 50 个不同场景、124/124 次自动化执行；这两个数字回答不同问题。
+- Xcode 26.5 一度只列出 generic destination，但显式 boot iOS 18.4 device 并传入 id 后，UI test 1/1 通过。
+
+### 原因
+
+- `commonTest` 是共享测试源码，最终仍由各 target 的 compilation、runner、driver 与运行时执行。
+- 单元、集成、平台和 UI 测试覆盖不同故障面，真实性不是越高越能替代下层精确断言。
+- 场景数描述行为定义，执行数描述目标矩阵；重复运行是兼容证据，不是新增业务场景。
+- 固定 sleep 等待时间而不是条件，会同时制造浪费与偶发失败。
+
+### 对工程决策的影响
+
+- 每个支持 target 必须实际运行共同测试，JVM 绿灯不能代替 Native 证据。
+- 单元测试 fake 端口，共同集成保留真实数据库接缝，UI 只覆盖少量高价值可见行为。
+- Android 平台状态与 Compose semantics 由 Android 测试拥有；Swift bridge 与 SwiftUI 装配由 Apple 测试拥有。
+- 测试报告同时给出不同场景数与目标执行数，并写清口径。
+- Kotlin 使用虚拟调度器，Compose 使用 test synchronization，XCTest 使用 `waitForExistence`；timeout 只是失败上限。
+- CI 将按快速 PR、平台 PR、主分支 UI smoke 和发布/定时车道拆分，而不是只有一个巨大的 `allTests`。
+
+对应决策记录：[ADR-0008](../docs/adr/0008-testing-strategy.md)
+
+对应实验：[实验 10](../labs/10-testing-pyramid/README.md)
+
+对应文章：[KMP 测试金字塔：一次验证，两端真的能放心吗？](../articles/10-testing-pyramid.md)
+
+
 
 
 
