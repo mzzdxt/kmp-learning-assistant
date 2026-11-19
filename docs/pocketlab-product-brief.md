@@ -139,11 +139,27 @@ PocketLab 按责任和风险组织测试，而不追求固定的单元/集成/UI
 → Android ViewModel / Compose → SwiftUI XCTest smoke
 ```
 
-- 37 个 `commonTest` 分别在 JVM、Android Host 与 iOS x64 执行；
+- 38 个 `commonTest` 分别在 JVM、Android Host 与 iOS x64 执行；
 - 共同集成测试使用真实 Refresh UseCase、SQLDelight Repository、transaction 与 Flow，外部 remote 保持确定性；
 - iOS 专用测试覆盖 callback、refresh、取消、异常与资源关闭；
 - Android Compose 测试只验证 state 渲染和 intent 转发，不复制共同业务分支；
 - iOS UI 测试使用唯一数据库冷启动真实 App，并验证首次刷新与幂等刷新；
-- 当前共有 50 个不同测试场景、124/124 次目标执行，两种计数不得混用；
+- Native 专用测试用弱引用证明纯 Kotlin 强引用环可被 tracing GC 回收；共同并发测试让两个 dispatcher 通过 `Mutex` 安全修改同一对象；
+- 当前共有 52 个不同测试场景、128/128 次目标执行，两种计数不得混用；
 - 异步测试使用虚拟时间、Compose 同步或条件等待，不使用固定 sleep。
+
+## 当前 Native runtime 边界
+
+PocketLab 把 Kotlin/Native 当作带 runtime 的原生编译目标，而不是“把 Kotlin 文本翻译成 Swift”：
+
+```text
+Kotlin source → KLIB（序列化 IR + metadata）→ LLVM + Kotlin runtime
+              → static framework → Xcode 最终链接 → iOS App
+```
+
+- 现代 Native 对象位于共享 heap，不再使用旧 memory manager 的 freeze 模型；
+- “对象可跨线程访问”不等于“修改天然安全”，共享可变状态必须由 `Mutex`、atomic 或单 owner 串行化；
+- Kotlin tracing GC 能回收不可达的纯 Kotlin 引用环；Swift/Objective-C ARC 与 GC 组成的混合强引用环不能指望任一方自动打破；
+- callback、delegate 与订阅默认审计强弱引用方向，长任务和数据库/network owner 仍显式 `cancel` / `close`；
+- framework 只是链接输入，二进制大小与性能结论以 Release 最终 App、GC 日志和 Instruments 证据为准。
 

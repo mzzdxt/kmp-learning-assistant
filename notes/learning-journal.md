@@ -380,6 +380,48 @@
 对应文章：[KMP 测试金字塔：一次验证，两端真的能放心吗？](../articles/10-testing-pyramid.md)
 
 
+---
+
+## 2026-11-19：没有 JVM，不等于没有 runtime
+
+### 我原来以为
+
+- Kotlin/Native 只是把 Kotlin 代码翻译成 Swift 或 Objective-C。
+- 现代 Native 允许对象跨线程后，并发安全也随之解决。
+- ARC 和 GC 都会处理引用环，所以 Swift/Kotlin 混合对象迟早能自动释放。
+- framework 文件大小可以直接代表最终 App 增量。
+
+### 实验实际发生了
+
+- iOS 编译先产生包含序列化 IR、metadata 与 target 信息的 KLIB，再由 LLVM、Kotlin runtime 和依赖链接成 static framework；它不是 Swift 源码。
+- 本机 KLIB manifest 明确记录 `builtins_platform=NATIVE`、`native_targets=ios_x64` 与 Kotlin 2.4.21 compiler version。
+- Debug / Release iosX64 framework 都成功链接；前者约 67 MB、后者约 12 MB，但二者仍是静态归档链接输入，不能冒充最终 App 体积。
+- 一个 `commonTest` 让两个独立 dispatcher 并发调用同一个 ledger；用 `Mutex` 串行化后，200 次写入完整且计数连续。
+- 一个 iosX64 专用测试构造纯 Kotlin 双向强引用环，丢弃 root 后调用 `GC.collect()`，弱引用变为 `null`。
+- 新增 2 个不同场景后，JVM 39/39、Android Host 39/39、iOS x64 45/45；连同平台测试总计 128/128 次执行。
+
+### 原因
+
+- Kotlin/Native 不依赖 JVM，却仍携带对象模型、调度与 tracing GC 等 Kotlin runtime 能力。
+- 现代 memory manager 使用共享 heap；它移除了旧 freeze 限制，却没有移除 data race。
+- tracing GC 根据 Kotlin 对象图的可达性回收；ARC 根据引用计数释放 Swift/Objective-C 对象。混合强环横跨两套所有权系统，双方都可能看到对方仍“活着”。
+- framework 还会在 Xcode 最终链接时裁剪、合并依赖并受架构和符号设置影响，所以只能对最终 Release App 做大小归因。
+
+### 对工程决策的影响
+
+- 新代码禁止恢复 `freeze()`、`@SharedImmutable` 和 legacy `native-mt` 依赖；遇到旧资料先核对现代 memory manager 时间线。
+- 共享可变状态必须明确同步机制或唯一 owner；“能访问”不作为并发安全论据。
+- Swift callback、delegate、closure 与 Kotlin owner 的引用方向进入 code review 清单，混合环用 `weak`、`unowned` 或显式取消协议断开。
+- GC 负责回收不可达内存，不负责停止 Job、注销监听或关闭数据库与网络资源；生命周期协议继续显式化。
+- 性能问题先采集 GC 日志、safepoint signpost 与 Instruments 证据，再调整 binary options 或内存结构。
+
+对应决策记录：[ADR-0009](../docs/adr/0009-native-memory-concurrency.md)
+
+对应实验：[实验 11](../labs/11-kotlin-native-runtime/README.md)
+
+对应文章：[Kotlin/Native 深水区：没有 JVM 之后，内存和并发到底谁管？](../articles/11-kotlin-native-runtime.md)
+
+
 
 
 
