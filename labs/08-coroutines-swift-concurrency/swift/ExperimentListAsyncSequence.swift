@@ -17,12 +17,13 @@ func refreshDirectly(
 
 extension IosExperimentListBridge {
     /// Turns the callback export into the abstraction Swift callers expect.
-    func experiments() -> AsyncThrowingStream<[ExperimentRecord], any Error> {
+    func experiments()
+        -> AsyncThrowingStream<UncheckedSendable<[ExperimentRecord]>, any Error> {
         AsyncThrowingStream { continuation in
             let cancellation = NativeCancellationBox()
             let token = subscribe(
                 onChange: { records in
-                    continuation.yield(records)
+                    continuation.yield(UncheckedSendable(records))
                 },
                 onFailure: { message in
                     continuation.finish(
@@ -39,12 +40,15 @@ extension IosExperimentListBridge {
 
     /// A one-element stream keeps Swift Task cancellation wired to the Kotlin Job.
     private func refreshResults()
-        -> AsyncThrowingStream<any RefreshExperimentsResult, any Error> {
+        -> AsyncThrowingStream<
+            UncheckedSendable<any RefreshExperimentsResult>,
+            any Error
+        > {
         AsyncThrowingStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
             let cancellation = NativeCancellationBox()
             let token = refresh(
                 onResult: { result in
-                    continuation.yield(result)
+                    continuation.yield(UncheckedSendable(result))
                     continuation.finish()
                 },
                 onFailure: { message in
@@ -62,9 +66,20 @@ extension IosExperimentListBridge {
 
     func refreshOnce() async throws -> any RefreshExperimentsResult {
         for try await result in refreshResults() {
-            return result
+            return result.value
         }
         throw CancellationError()
+    }
+}
+
+/// Kotlin/Native's Objective-C export has no Swift `Sendable` metadata. The
+/// Kotlin bridge promises Main-dispatcher callbacks; this narrow box records
+/// that manually audited boundary without disabling Swift 6 checks globally.
+struct UncheckedSendable<Value>: @unchecked Sendable {
+    let value: Value
+
+    init(_ value: Value) {
+        self.value = value
     }
 }
 

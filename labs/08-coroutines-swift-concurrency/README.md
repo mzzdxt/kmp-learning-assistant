@@ -191,11 +191,11 @@ swift/ExperimentListAsyncSequence.swift
 ```swift
 extension IosExperimentListBridge {
     func experiments()
-        -> AsyncThrowingStream<[ExperimentRecord], any Error> {
+        -> AsyncThrowingStream<UncheckedSendable<[ExperimentRecord]>, any Error> {
         AsyncThrowingStream { continuation in
             let cancellation = NativeCancellationBox()
             let token = subscribe(
-                onChange: { continuation.yield($0) },
+                onChange: { continuation.yield(UncheckedSendable($0)) },
                 onFailure: {
                     continuation.finish(
                         throwing: ExperimentObservationError(message: $0)
@@ -215,13 +215,13 @@ extension IosExperimentListBridge {
 
 ```swift
 for try await records in bridge.experiments() {
-    // 更新 @MainActor 状态
+    // 在 @MainActor 上使用 records.value
 }
 ```
 
 `AsyncStream` 不是装饰器。它定义了流元素、结束、失败、缓冲与取消如何进入 Swift Concurrency。
 
-示例使用 `@preconcurrency import PocketLabShared`，因为 Objective-C framework 尚未携带 Swift 6 `Sendable` 审计信息。这只是显式声明“按旧模块导入”，不是线程安全证明；Main dispatcher、`@MainActor` 和下面的锁仍然不可省略。
+示例使用 `@preconcurrency import PocketLabShared`，因为 Objective-C framework 尚未携带 Swift 6 `Sendable` 审计信息。这只是显式声明“按旧模块导入”，不是线程安全证明。真实 Xcode App target 还会把 `Continuation.yield` 视为发送点，因此示例用一个很窄的 `UncheckedSendable` 盒子承载 Kotlin 对象；它的安全前提是 callback 固定在 Main dispatcher、消费状态固定在 `@MainActor`。下面 token box 的锁也仍然不可省略。
 
 ## 第五步：别漏掉 cancel-before-install 竞态
 

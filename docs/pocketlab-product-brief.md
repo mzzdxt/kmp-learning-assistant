@@ -12,7 +12,7 @@ PocketLab 是一个离线优先的个人实验记录器：把“我猜……”�
 创建草稿 → 填写标题与假设 → 校验 → 离线保存 → 出现在实验列表
 ```
 
-项目从“创建并保存草稿”启动；当前已经加入远端读取、本地数据库、刷新合并和 Apple 并发桥。上传、附件、搜索与原生 UI 继续增量加入。
+项目从“创建并保存草稿”启动；当前已经加入远端读取、本地数据库、刷新合并、Apple 并发桥，以及 Android Compose / iOS SwiftUI 原生实验列表。上传、附件、详情与搜索继续增量加入。
 
 ## 共享业务约束
 
@@ -39,7 +39,7 @@ PocketLab 是一个离线优先的个人实验记录器：把“我猜……”�
 2. 按状态和关键字搜索。
 3. Ktor 远端读取、同步与离线队列（远端读取与数据库刷新合并已完成，上传待实现）。
 4. 冲突检测和可解释的同步状态机。
-5. Android Compose 与 iOS SwiftUI 原生 UI。
+5. Android Compose 与 iOS SwiftUI 原生实验列表（已完成；详情、编辑与搜索待实现）。
 
 ## 当前验收标准
 
@@ -48,6 +48,7 @@ PocketLab 是一个离线优先的个人实验记录器：把“我猜……”�
 - fake 位于 `commonTest`，不进入生产代码。
 - 同一组测试在 JVM、Android Host 与 iOS Simulator 通过。
 - Apple 专用互操作行为在 iOS Native 测试中验证，Swift 包装通过 Swift 6 严格并发 type-check。
+- Android 与 iOS 宿主工程都能编译、最终链接并在模拟器启动；平台 ViewModel 不复制刷新与合并规则。
 
 ## 当前共享状态流
 
@@ -61,7 +62,7 @@ PocketLab 是一个离线优先的个人实验记录器：把“我猜……”�
 → suspend ExperimentRepository
 ```
 
-平台 UI 负责生命周期与渲染，共享 Store 负责保存状态机、校验和重复提交约束。Apple Flow 取消桥已经完成编译与行为验证；Android Compose、SwiftUI 具体页面和真实界面生命周期将在下一阶段接入。
+平台 UI 负责生命周期与渲染，共享 Store 负责保存状态机、校验和重复提交约束。Apple Flow 取消桥已经接入 SwiftUI `.task`，Android 列表通过 `collectAsStateWithLifecycle` 观察平台 ViewModel。创建/编辑页面仍待接入。
 
 ## 当前远端读取边界
 
@@ -109,4 +110,22 @@ Flow / suspend
 - Swift `AsyncStream.onTermination` 把 Task 取消传播回 Kotlin Job。
 - 生产 callback 由 `Dispatchers.Main` 送达，SwiftUI 状态仍应由 `@MainActor` 隔离。
 - Swift Export 已支持 suspend 与 Flow 的原生映射，但当前仍为 Alpha；等真实 iOS direct-integration 壳工程建立后再单独评估。
+
+## 当前原生 UI 边界
+
+实验列表采用“共享数据与领域层、平台 ViewModel、原生 UI”方案：
+
+```text
+Android Compose → AndroidX ViewModel ─┐
+                                     ├→ Refresh UseCase → SQLDelight → database Flow
+SwiftUI → @MainActor ObservableObject ┘
+```
+
+- Android 使用 `viewModelScope` 与 `collectAsStateWithLifecycle`。
+- iOS 使用 SwiftUI `.task`、`.refreshable` 与 AsyncSequence cancellation bridge。
+- 两端都只从 SQLDelight 读取列表，remote response 不直接进入 UI。
+- 稳定失败 reason 共享；文案、日期格式、空状态和交互属于平台。
+- iOS `IosPocketLabFeature` 显式拥有并关闭 bridge、network 与 database。
+- 当前 Swift 6 FFI `Sendable` 豁免被限制在 Main dispatcher / MainActor 审计过的窄盒子。
+- Compose Multiplatform UI 与共享 ViewModel 都保留为未来可评估方案，而非默认禁用。
 

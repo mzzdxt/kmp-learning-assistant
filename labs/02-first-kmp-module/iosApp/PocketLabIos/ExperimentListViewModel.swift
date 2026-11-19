@@ -18,7 +18,7 @@ final class ExperimentListViewModel: ObservableObject {
     func observe() async {
         do {
             for try await records in feature.experimentList.experiments() {
-                experiments = records
+                experiments = records.value
             }
         } catch is CancellationError {
             // SwiftUI cancelled the view task; the AsyncStream cancels the Kotlin Job.

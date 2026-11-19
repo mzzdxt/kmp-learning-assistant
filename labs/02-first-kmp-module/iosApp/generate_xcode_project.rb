@@ -46,7 +46,9 @@ target.build_configurations.each do |configuration|
   settings["INFOPLIST_KEY_UILaunchScreen_Generation"] = "YES"
   settings["ENABLE_USER_SCRIPT_SANDBOXING"] = "NO"
   settings["FRAMEWORK_SEARCH_PATHS"] = "$(inherited) $(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)"
-  settings["OTHER_LDFLAGS"] = "$(inherited) -framework PocketLabShared"
+  # PocketLabShared is a static framework. SQLDelight's Native driver calls the
+  # platform sqlite3 API, so the final application target owns that system link.
+  settings["OTHER_LDFLAGS"] = "$(inherited) -framework PocketLabShared -lsqlite3"
   settings["ONLY_ACTIVE_ARCH"] = configuration.name == "Debug" ? "YES" : "NO"
   settings["CURRENT_PROJECT_VERSION"] = "1"
   settings["MARKETING_VERSION"] = "1.0"

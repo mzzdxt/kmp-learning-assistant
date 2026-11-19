@@ -199,6 +199,7 @@
 					"$(inherited)",
 					"-framework",
 					PocketLabShared,
+					"-lsqlite3",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.kmpjourney.pocketlab.ios;
 				PRODUCT_NAME = PocketLabIos;
@@ -232,6 +233,7 @@
 					"$(inherited)",
 					"-framework",
 					PocketLabShared,
+					"-lsqlite3",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.kmpjourney.pocketlab.ios;
 				PRODUCT_NAME = PocketLabIos;

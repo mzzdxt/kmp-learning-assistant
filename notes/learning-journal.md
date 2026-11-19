@@ -291,6 +291,51 @@
 对应实验：[实验 08](../labs/08-coroutines-swift-concurrency/README.md)  
 对应文章：[Coroutines 遇见 Swift Concurrency](../articles/08-coroutines-meet-swift-concurrency.md)
 
+---
+
+## 2026-11-19：两套原生 UI，共享一份事实
+
+### 我原来以为
+
+- 既然选择 KMP，就应该尽量连 ViewModel 和 UI 一起共享，否则复用率不够高。
+- Android Compose 与 SwiftUI 各写一遍 ViewModel，会自然演变成两套业务逻辑。
+- Swift wrapper 通过单文件严格并发 type-check，就足以证明能进入真实 App。
+- Kotlin framework 成功链接后，Xcode App 最终链接不会再有 KMP 相关问题。
+- AndroidX 库全部选最新稳定版，通常就是最安全的组合。
+
+### 实验实际发生了
+
+- Android 使用 AndroidX ViewModel + Compose，iOS 使用 `@MainActor ObservableObject` + SwiftUI；两端 ViewModel 只翻译生命周期和呈现状态，刷新、数据库与合并规则仍只有一份。
+- Android 通过 `collectAsStateWithLifecycle` 收集，iOS 通过 `.task` + AsyncSequence 收集；离开页面时取消沿 Swift Task → stream → Kotlin token → Job 传播。
+- 真实 Swift 6 Xcode target 报告 Kotlin `ExperimentRecord` 在 `Continuation.yield` 发送点不是 `Sendable`；最终用一个经 Main dispatcher / MainActor 审计的窄 `UncheckedSendable` 盒子解决，没有降低整个项目并发检查等级。
+- 静态 `PocketLabShared.framework` 内的 SQLiter 调用要求最终 App 显式链接 `libsqlite3`；添加 `-lsqlite3` 后才完成链接。
+- 最新 Compose BOM 2026.09.00 与 Lifecycle 2.11.0 要求 compileSdk 37 / AGP 9.1，超出当前 AGP 8.13.2 工具链；改用 Compose BOM 2026.06.01 与 Lifecycle 2.10.0 后兼容。
+- Android App 在 Pixel 2 API 34 模拟器冷启动成功；iOS App 在 iPhone 15 Pro iOS 17.5 模拟器启动成功；两端均显示共享 demo remote 经 SQLDelight 写入的 3 条记录。
+- 共享模块 JVM 37、Android Host 37、iOS 42 条测试通过，Android ViewModel 2 条测试通过，总执行数 118/118。
+
+### 原因
+
+- 平台 ViewModel 可以复用业务能力而不复用生命周期框架；重复的是薄翻译层，不是离线和同步决策。
+- KMP 经 Objective-C 导出的类型没有 Swift `Sendable` 元数据；`@preconcurrency` 也不会自动证明线程安全。
+- 静态 framework 的系统库依赖由最终可执行文件链接，framework 自己生成成功不代表消费端输入完整。
+- Android 依赖兼容是 Kotlin、AGP、Gradle、compileSdk、Compose 与 Lifecycle 组成的图，不是一列最新版本。
+- build、Swift compile、final link、install 与 launch 是五个不同门禁。
+
+### 对工程决策的影响
+
+- 当前保留平台 ViewModel 与原生 UI，等真实重复度增长后再评估共享 ViewModel 或 Compose Multiplatform。
+- 两端 UI 一律观察数据库事实来源，不直接消费 remote response。
+- FFI `@unchecked Sendable` 只能位于有明确线程/actor 契约的窄边界，并在契约变化时重新审计。
+- Xcode direct integration、系统 linker flags、Swift 6 build 与 simulator launch 都进入 Apple 验证清单。
+- Android 依赖升级先检查官方 release requirements，再由 AAR metadata 与完整构建验证，不通过 suppress 躲避。
+- 运行截图只证明 UI 路径存在，不能替代共享规则、平台 ViewModel 和 migration 测试。
+
+对应决策记录：[ADR-0007](../docs/adr/0007-native-ui-platform-viewmodels.md)
+
+对应实验：[实验 09](../labs/09-native-ui/README.md)
+
+对应文章：[Android Compose + SwiftUI：UI 不共享也能合作愉快](../articles/09-native-ui.md)
+
 
 
 

@@ -331,13 +331,13 @@ Apple 把 `AsyncStream` 定义为将 callback 或 delegate API 适配进 async/a
 ```swift
 extension IosExperimentListBridge {
     func experiments()
-        -> AsyncThrowingStream<[ExperimentRecord], any Error> {
+        -> AsyncThrowingStream<UncheckedSendable<[ExperimentRecord]>, any Error> {
         AsyncThrowingStream { continuation in
             let cancellation = NativeCancellationBox()
 
             let token = subscribe(
                 onChange: { records in
-                    continuation.yield(records)
+                    continuation.yield(UncheckedSendable(records))
                 },
                 onFailure: { message in
                     continuation.finish(
@@ -359,13 +359,13 @@ extension IosExperimentListBridge {
 
 ```swift
 for try await records in bridge.experiments() {
-    // render records
+    // render records.value
 }
 ```
 
 这不仅是语法糖。`AsyncThrowingStream` 明确了四件事：
 
-1. 元素类型是 `[ExperimentRecord]`；
+1. 逻辑元素是 `[ExperimentRecord]`，跨 stream 时由一个窄盒子承载；
 2. 每次 `yield` 是一次列表快照；
 3. Kotlin observation 失败时 stream 以 Error 结束；
 4. Swift 停止迭代时必须取消 Kotlin collection。
@@ -378,7 +378,9 @@ for try await records in bridge.experiments() {
 @preconcurrency import PocketLabShared
 ```
 
-这是因为标准 Objective-C framework 没有经过 Swift 6 的 `Sendable` 审计。`@preconcurrency` 只把“旧模块尚未声明并发隔离”变成显式兼容边界，不会自动让 Kotlin 对象线程安全。回调固定在 Kotlin Main dispatcher、token box 使用锁，以及 Swift UI 使用 `@MainActor`，仍然是我们必须自己证明的契约。
+这是因为标准 Objective-C framework 没有经过 Swift 6 的 `Sendable` 审计。`@preconcurrency` 只把“旧模块尚未声明并发隔离”变成显式兼容边界，不会自动让 Kotlin 对象线程安全。
+
+真实 Xcode App target 进一步发现：`AsyncStream.Continuation.yield` 在 Swift 6 下是一个发送点，直接发送 `[ExperimentRecord]` 会触发 data-race 诊断。最终实现使用 `UncheckedSendable<Value>: @unchecked Sendable` 包住 Kotlin 值。这个名字刻意刺眼，因为它不是自动安全证明；它依赖 Kotlin bridge 已把 callback 固定到 `Dispatchers.Main`、Swift 消费者由 `@MainActor` 隔离。我们只豁免这一条经审计的边，不关闭整个 target 的严格检查。
 
 ## 真正的握手发生在 onTermination
 
@@ -655,7 +657,7 @@ xcrun --sdk iphonesimulator swiftc \
 
 - framework 的 Swift importer API 与示例一致；
 - `try await useCase.execute()` 确实可编译；
-- `AsyncThrowingStream` 的元素和错误类型成立；
+- `AsyncThrowingStream` 的元素盒子和错误类型成立；
 - 在显式 `@preconcurrency` 旧模块边界下，wrapper 自己的 `@Sendable` closure 满足 Swift 6 检查；
 - token box 的并发声明在完整检查下成立。
 
