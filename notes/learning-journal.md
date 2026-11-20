@@ -811,6 +811,64 @@
 对应文章：[Compose Multiplatform 要不要上？一份决策清单](../articles/19-compose-multiplatform-decision.md)
 
 
+---
+
+## 2026-11-20：发布合同通过，不代表产品已经准备好发布
+
+### 我原来以为
+
+- Android、iOS 和 KMP framework 的版本号相同，就已经完成版本治理。
+- `libs.versions.toml` 能保证每台机器解析到完全相同的 dependency graph。
+- CI 全绿后，生产 readiness 可以直接写成 true。
+- 有 feature flag 就能一键回滚。
+- halt/pause 商店 rollout 会让已更新用户回到旧版本。
+- 数据库有 migration，就应该同时提供 down migration。
+- shared module 的 owner 写成“移动端团队”足够明确。
+
+### 实验实际发生了
+
+- 0.17.0/build 17 原本硬编码在 Android、shared framework、Xcode generator 和 generated pbxproj；数值一致只是人工同步成功。
+- 新建 `release.properties`，让 Android、KMP framework 与 Xcode generator 从同一个 source 读取 version/build，同时独立声明 database schema 1 和 diagnostic schema 1。
+- release verifier 检查 generated Xcode project drift、SQLDelight `1.db` baseline 与 source 中 `schema=1`，避免只验证源配置。
+- 合同建立 `release_command/shared_runtime/android_app/ios_app/data_migration/observability` 六个 area，每个都有不同的 primary 与 backup role。
+- mixed-version contract 使用 additive server change、unknown-field tolerance、expand/migrate/contract、single writer 与 forward-fix-only data rollback。
+- Android rollout 写为 1→10→50→100%，iOS automatic phased release 写为 1→2→5→10→20→50→100%；两端都明确 pause/halt 不会降级已更新用户。
+- promotion metrics 强制按 platform/version/build/cohort 切片，但没有为没有生产用户的学习仓库虚构 SLO。
+- config、binary、data rollback 分成三种能力；planned flag 被明确标为未实现，不能作为 0.17.0 的 kill switch 证据。
+- Android/Apple/shared binary artifact manifests 分别要求 mapping、UUID、checksum、header hash 与工具链，保留策略示例为 400 天。
+- 8 个 required gates 只有 5 个 passed；最终 iOS runtime/archive 和真实 rollout backend 阻塞，所以 derived readiness 为 false。
+- verifier 在内存制造 6 个坏合同，owner 重合、rollout 倒退、destructive downgrade、虚假 ready、版本漂移和未知 owner 全部被拒绝。
+
+### 原因
+
+- 单一版本来源防止同一 release identity 漂移，但 App、database 和 diagnostics 是不同协议，需要独立版本字段。
+- version catalog 集中 requested versions；实际 resolved graph 仍需要 constraints/locking/evidence 治理。
+- 移动端长期存在混合版本，server/schema 不能假设所有用户同步升级。
+- feature flag 只能切换真实保留的代码路径，不能降级 binary 或逆转数据。
+- 商店 halt/pause 限制继续扩散；已安装版本仍需配置隔离或更高 build 的 forward fix。
+- destructive down migration 可能丢失新数据；expand/migrate/contract 为旧新版本提供重叠窗口。
+- shared code 同时影响两个平台，需要能停止发布、维护 runbook 和接手事故的明确 owner/backup。
+- readiness gate 的职责是阻止缺失证据被写成绿色，不是让 dashboard 看起来全绿。
+
+### 对工程决策的影响
+
+- Android/KMP/Xcode 的 version/build 从 `release.properties` 读取，任何 generated project drift 都会失败。
+- required gates 的 state 自动推导 readiness；禁止手工把 blocked release 标为 ready。
+- rollout promotion 必须按平台、版本、build 与 cohort 看已批准 SLO/预算和上一健康版本。
+- rollback runbook 总是先说明属于 config、binary 还是 data，并写明能力不能覆盖什么。
+- database 采用 single writer、expand/migrate/contract 和 forward-fix-first；backup/restore 必须演练后才算能力。
+- feature flag 有 owner/default/scope/expiry/removal，100% 后仍有 observation + cleanup。
+- artifact、mapping、dSYM 和 checksum 与 build/commit 绑定，同一版本坐标不可覆盖不同 bytes。
+- shared Kotlin API 若未来跨仓发布，再把 `apiDump/apiCheck` 升级为 blocking gate；当前不虚构已实现。
+- PocketLab 仍为 0.17.0/build 17，且明确 `release_ready=false`，没有把学习工程包装成已上线产品。
+
+对应决策记录：[ADR-0018](../docs/adr/0018-machine-checked-production-release-contract.md)
+
+对应实验：[实验 20](../labs/20-production-governance/README.md)
+
+对应文章：[KMP 上生产：团队协作、版本治理与回滚策略](../articles/20-kmp-production-governance.md)
+
+
 
 
 

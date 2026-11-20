@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "product": "PocketLab",
+  "generated_on": "2026-11-20",
+  "review_by": "2027-02-18",
+  "release_identity": {
+    "source": "labs/02-first-kmp-module/release.properties",
+    "version_name": "0.17.0",
+    "build_number": 17,
+    "database_schema": 1,
+    "diagnostic_schema": 1,
+    "immutable_artifacts": true
+  },
+  "owners": [
+    {
+      "area": "release_command",
+      "primary": "mobile-release-owner",
+      "backup": "mobile-platform-owner"
+    },
+    {
+      "area": "shared_runtime",
+      "primary": "kmp-owner",
+      "backup": "android-owner"
+    },
+    {
+      "area": "android_app",
+      "primary": "android-owner",
+      "backup": "mobile-release-owner"
+    },
+    {
+      "area": "ios_app",
+      "primary": "ios-owner",
+      "backup": "mobile-release-owner"
+    },
+    {
+      "area": "data_migration",
+      "primary": "storage-owner",
+      "backup": "kmp-owner"
+    },
+    {
+      "area": "observability",
+      "primary": "mobile-observability-owner",
+      "backup": "mobile-release-owner"
+    }
+  ],
+  "compatibility": {
+    "mixed_version_window": {
+      "max_build_gap": 2,
+      "server_contract": "additive",
+      "unknown_fields": "ignore",
+      "field_removal": "after_minimum_supported_version_advances"
+    },
+    "database": {
+      "current_schema": 1,
+      "migration_strategy": "expand_migrate_contract",
+      "rollback_mode": "forward_fix_only",
+      "destructive_down_migration": false,
+      "single_writer": true
+    },
+    "shared_binary": {
+      "version_name": "0.17.0",
+      "build_number": 17,
+      "coordinates_are_immutable": true,
+      "apple_api_gate": "verify-apple-api.sh"
+    }
+  },
+  "promotion_metrics": [
+    {
+      "id": "crash_free_sessions",
+      "comparison": "approved_slo",
+      "slices": [
+        "platform",
+        "version",
+        "build",
+        "cohort"
+      ]
+    },
+    {
+      "id": "refresh_failure_rate",
+      "comparison": "previous_healthy_release_and_approved_slo",
+      "slices": [
+        "platform",
+        "version",
+        "build",
+        "cohort"
+      ]
+    },
+    {
+      "id": "p95_refresh_duration",
+      "comparison": "previous_healthy_release_and_approved_budget",
+      "slices": [
+        "platform",
+        "version",
+        "build",
+        "cohort"
+      ]
+    },
+    {
+      "id": "database_migration_errors",
+      "comparison": "zero_tolerance",
+      "slices": [
+        "platform",
+        "version",
+        "build",
+        "cohort"
+      ]
+    }
+  ],
+  "rollout": {
+    "selection_scope": "app_session",
+    "internal_gate_required": true,
+    "android": {
+      "stages": [
+        {
+          "percent": 1,
+          "minimum_observation_hours": 24
+        },
+        {
+          "percent": 10,
+          "minimum_observation_hours": 24
+        },
+        {
+          "percent": 50,
+          "minimum_observation_hours": 48
+        },
+        {
+          "percent": 100,
+          "minimum_observation_hours": 168
+        }
+      ],
+      "halt_action": "halt_play_staged_rollout",
+      "already_updated_users_remain_on_new_build": true
+    },
+    "ios": {
+      "stages": [
+        {
+          "percent": 1,
+          "minimum_observation_hours": 24
+        },
+        {
+          "percent": 2,
+          "minimum_observation_hours": 24
+        },
+        {
+          "percent": 5,
+          "minimum_observation_hours": 24
+        },
+        {
+          "percent": 10,
+          "minimum_observation_hours": 24
+        },
+        {
+          "percent": 20,
+          "minimum_observation_hours": 24
+        },
+        {
+          "percent": 50,
+          "minimum_observation_hours": 24
+        },
+        {
+          "percent": 100,
+          "minimum_observation_hours": 168
+        }
+      ],
+      "halt_action": "pause_app_store_phased_release",
+      "manual_downloads_can_bypass_phase": true
+    }
+  },
+  "feature_toggles": [
+    {
+      "id": "shared_ui_summary_card",
+      "status": "planned",
+      "required_for_release": false,
+      "default": false,
+      "selection_scope": "app_session",
+      "owner_area": "shared_runtime",
+      "expires_on": "2027-02-18",
+      "removal_condition": "one_healthy_release_after_100_percent_or_spike_deleted",
+      "single_data_writer": true
+    }
+  ],
+  "rollback": {
+    "configuration": {
+      "action": "disable_feature_then_start_new_session",
+      "can_reverse_persisted_data": false,
+      "requires_implemented_toggle": true
+    },
+    "binary": {
+      "action": "halt_rollout_then_ship_higher_build_forward_fix",
+      "force_store_downgrade": false,
+      "already_updated_users_keep_build": true
+    },
+    "data": {
+      "action": "forward_fix_or_restore_with_incident_approval",
+      "destructive_down_migration": false,
+      "requires_backup_and_restore_drill": true
+    }
+  },
+  "artifacts": {
+    "android": {
+      "required": [
+        "aab_or_apk",
+        "mapping_txt",
+        "artifact_sha256",
+        "mapping_sha256",
+        "pg_map_id",
+        "version_name",
+        "version_code",
+        "toolchain_versions"
+      ],
+      "retention_days": 400
+    },
+    "apple": {
+      "required": [
+        "xcarchive",
+        "dsym",
+        "binary_uuid",
+        "dsym_uuid",
+        "artifact_sha256",
+        "version_name",
+        "build_number",
+        "toolchain_versions"
+      ],
+      "retention_days": 400
+    },
+    "shared_binary": {
+      "required": [
+        "xcframework_zip",
+        "swiftpm_checksum",
+        "apple_header_sha256",
+        "version_name",
+        "build_number"
+      ],
+      "retention_days": 400
+    }
+  },
+  "gates": [
+    {
+      "id": "toolchain_compatibility",
+      "required": true,
+      "state": "passed",
+      "owner_area": "shared_runtime",
+      "evidence": "Kotlin_Gradle_AGP_Xcode_matrix_and_real_builds"
+    },
+    {
+      "id": "shared_test_matrix",
+      "required": true,
+      "state": "passed",
+      "owner_area": "shared_runtime",
+      "evidence": "domain_shared_JVM_Android_iOS_x64"
+    },
+    {
+      "id": "android_release",
+      "required": true,
+      "state": "passed",
+      "owner_area": "android_app",
+      "evidence": "minified_release_build_mapping_and_runtime_smoke"
+    },
+    {
+      "id": "apple_distribution",
+      "required": true,
+      "state": "passed",
+      "owner_area": "ios_app",
+      "evidence": "release_XCFramework_SwiftPM_checksum_and_consumer_compile"
+    },
+    {
+      "id": "ios_app_runtime",
+      "required": true,
+      "state": "blocked",
+      "owner_area": "ios_app",
+      "evidence": "matching_Xcode_runtime_and_final_App_archive_missing"
+    },
+    {
+      "id": "artifact_manifest",
+      "required": true,
+      "state": "blocked",
+      "owner_area": "release_command",
+      "evidence": "final_iOS_xcarchive_dSYM_identity_missing"
+    },
+    {
+      "id": "production_rollout_backend",
+      "required": true,
+      "state": "not_implemented",
+      "owner_area": "release_command",
+      "evidence": "no_real_remote_cohort_or_store_rollout_executed"
+    },
+    {
+      "id": "rollback_contract_drill",
+      "required": true,
+      "state": "passed",
+      "owner_area": "data_migration",
+      "evidence": "machine_checked_config_binary_data_boundaries"
+    },
+    {
+      "id": "kotlin_library_api_validation",
+      "required": false,
+      "state": "not_implemented",
+      "owner_area": "shared_runtime",
+      "evidence": "enable_if_shared_Kotlin_API_is_published_cross_repository"
+    }
+  ],
+  "readiness": {
+    "release_ready": false,
+    "expected_blockers": [
+      "artifact_manifest",
+      "ios_app_runtime",
+      "production_rollout_backend"
+    ]
+  }
+}

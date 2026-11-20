@@ -328,3 +328,31 @@ sharedUi → ExperimentSummaryCard → Android AAR / iOS UIViewController factor
 
 完整决策见 [ADR-0017](adr/0017-bound-compose-multiplatform-adoption.md)，实验见[实验 19](../labs/19-compose-multiplatform/README.md)。
 
+## 当前生产发布治理边界
+
+PocketLab 把“能构建 Release”和“可以生产放量”分成两个结论：
+
+```text
+release identity
+→ owners + compatibility
+→ required gates
+→ staged rollout
+→ config / binary / data rollback
+→ cleanup
+```
+
+- Android App、KMP framework 与 Xcode generator 统一读取 `release.properties` 中的 0.17.0/build 17；已生成 `.pbxproj` 仍由 drift gate 检查；
+- database schema 1 与 diagnostic schema 1 保持独立身份，不与 App build number 混为同一协议；
+- `release_command`、`shared_runtime`、`android_app`、`ios_app`、`data_migration`、`observability` 六个 area 各有 primary/backup role；
+- mixed-version window 示例为两个 builds，服务端变更 additive，未知字段可忽略，字段删除等待 minimum supported version 前移；
+- database 采用 expand/migrate/contract、single writer 与 forward-fix-first，禁止把 destructive down migration 当常规回滚；
+- Android rollout 示例为 internal → 1% → 10% → 50% → 100%；iOS automatic updates 遵循 1% → 2% → 5% → 10% → 20% → 50% → 100%；
+- promotion metrics 必须按 platform/version/build/cohort 切片，不使用跨版本平均值决定放量；
+- configuration、binary 和 data rollback 是三种独立能力；pause/halt 不会强制降级已更新用户，flag 也不能逆转已写数据；
+- Android、Apple 与 shared binary 各有 artifact/symbol/checksum manifest，当前 retention contract 为至少 400 天；
+- release verifier 用 6 个 negative mutations 验证 owner、rollout、data downgrade、readiness、version 和 gate owner 回归会失败；
+- 当前 8 个 required gates 只有 5 个 passed，`artifact_manifest`、`ios_app_runtime`、`production_rollout_backend` 明确阻塞，因此 `release_ready=false`；
+- 合同通过只表示 not-ready 结论完整且一致，不表示 PocketLab 已经生产发布。
+
+完整决策见 [ADR-0018](adr/0018-machine-checked-production-release-contract.md)，实验见[实验 20](../labs/20-production-governance/README.md)。
+

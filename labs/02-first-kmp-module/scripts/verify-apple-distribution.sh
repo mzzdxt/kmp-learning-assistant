@@ -4,6 +4,17 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PROJECT_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+RELEASE_PROPERTIES="$PROJECT_ROOT/release.properties"
+
+release_property() {
+    awk -F= -v key="$1" '$1 == key { sub(/^[^=]*=/, ""); print; exit }' \
+        "$RELEASE_PROPERTIES"
+}
+
+VERSION_NAME=$(release_property versionName)
+BUILD_NUMBER=$(release_property buildNumber)
+[ -n "$VERSION_NAME" ] || { echo "Missing versionName in release.properties" >&2; exit 1; }
+[ -n "$BUILD_NUMBER" ] || { echo "Missing buildNumber in release.properties" >&2; exit 1; }
 
 if [ -z "${GRADLE_USER_HOME:-}" ]; then
     GRADLE_USER_HOME="$PROJECT_ROOT/../.gradle-user-home"
@@ -16,7 +27,7 @@ SIMULATOR_FRAMEWORK="$XCFRAMEWORK/ios-arm64_x86_64-simulator/PocketLabShared.fra
 PACKAGE_TEMPLATE="$PROJECT_ROOT/distribution/apple/Package.swift"
 STAGING_ROOT="$PROJECT_ROOT/build/apple-distribution"
 PACKAGE_ROOT="$STAGING_ROOT/SwiftPackage"
-ARCHIVE="$STAGING_ROOT/PocketLabShared-0.17.0.xcframework.zip"
+ARCHIVE="$STAGING_ROOT/PocketLabShared-$VERSION_NAME.xcframework.zip"
 
 cd "$PROJECT_ROOT"
 
@@ -42,9 +53,9 @@ for FRAMEWORK in "$DEVICE_FRAMEWORK" "$SIMULATOR_FRAMEWORK"; do
     [ "$(plutil -extract CFBundleIdentifier raw "$PLIST")" = \
         "dev.kmpjourney.pocketlab.shared" ] || fail "unexpected bundle identifier"
     [ "$(plutil -extract CFBundleShortVersionString raw "$PLIST")" = \
-        "0.17.0" ] || fail "unexpected marketing version"
+        "$VERSION_NAME" ] || fail "marketing version drifted from release.properties"
     [ "$(plutil -extract CFBundleVersion raw "$PLIST")" = \
-        "17" ] || fail "unexpected bundle version"
+        "$BUILD_NUMBER" ] || fail "bundle version drifted from release.properties"
     file "$FRAMEWORK/PocketLabShared" | rg -q 'archive' || \
         fail "framework binary is not static"
 done

@@ -7,6 +7,19 @@ root = File.expand_path(__dir__)
 project_path = File.join(root, "PocketLabIos.xcodeproj")
 abort("#{project_path} already exists; delete it explicitly before regenerating") if File.exist?(project_path)
 
+release_path = File.expand_path("../release.properties", root)
+release_properties = File.readlines(release_path).each_with_object({}) do |line, properties|
+  stripped = line.strip
+  next if stripped.empty? || stripped.start_with?("#")
+
+  key, value = stripped.split("=", 2)
+  abort("Invalid release property: #{stripped}") if key.nil? || value.nil? || value.empty?
+  properties[key] = value
+end
+release_version_name = release_properties.fetch("versionName")
+release_build_number = release_properties.fetch("buildNumber")
+abort("Invalid buildNumber: #{release_build_number}") unless release_build_number.match?(/\A\d+\z/)
+
 project = Xcodeproj::Project.new(project_path)
 target = project.new_target(:application, "PocketLabIos", :ios, "17.0")
 ui_test_target = project.new_target(:ui_test_bundle, "PocketLabIosUITests", :ios, "17.0")
@@ -60,8 +73,8 @@ target.build_configurations.each do |configuration|
   settings["ONLY_ACTIVE_ARCH"] = configuration.name == "Debug" ? "YES" : "NO"
   settings["DEBUG_INFORMATION_FORMAT"] =
     configuration.name == "Debug" ? "dwarf" : "dwarf-with-dsym"
-  settings["CURRENT_PROJECT_VERSION"] = "17"
-  settings["MARKETING_VERSION"] = "0.17.0"
+  settings["CURRENT_PROJECT_VERSION"] = release_build_number
+  settings["MARKETING_VERSION"] = release_version_name
 end
 
 ui_test_target.build_configurations.each do |configuration|

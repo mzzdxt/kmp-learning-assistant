@@ -140,7 +140,7 @@ Podspec example 另用 `pod ipc spec` 解析；App 行为另由 Xcode UI test �
 - remote release 需要 ZIP hosting、Git tag、checksum 与消费者验证；
 - static framework 的许可证、资源、privacy 与符号资产仍需单独发布策略；
 - Intel 本地无法执行 arm64 Simulator tests，需要 Apple Silicon runner；
-- 版本目前写在 Gradle DSL，后续需提升为单一 release version source。
+- 版本最初写在 Gradle DSL；[ADR-0018](0018-machine-checked-production-release-contract.md) 已用 `release.properties` 统一 Android、KMP framework 与 Xcode generator，并由 production contract 检查生成项目 drift。
 
 ## 被拒绝的方案
 

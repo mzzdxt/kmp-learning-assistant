@@ -99,6 +99,14 @@ sharedUi: optional Compose Multiplatform leaf-component spike
 
 门禁使用 Compose Multiplatform 1.11.1 与当前 AGP 8.13.2 / compileSdk 36 baseline，拒绝 Apple `iosX64`、presentation model header 泄漏和 production module 反向依赖。Intel host 只交叉编译 arm64 Simulator test/framework，不把 skipped runtime test 伪装成通过。完整决策见[实验 19](../19-compose-multiplatform/README.md)。
 
+验证 Android、KMP framework、Xcode generator/project 的 release identity、owner、兼容窗口、分阶段放量与三类回滚合同：
+
+```shell
+../20-production-governance/scripts/verify_release_contract.rb
+```
+
+`release.properties` 是 0.17.0/build 17 的单一来源，同时声明 database/diagnostic schema；门禁会拒绝 Xcode drift、owner 缺失、rollout 倒退、destructive down migration 和虚假 production readiness。当前结论仍为 `release_ready=false`，完整缺口见[实验 20](../20-production-governance/README.md)。
+
 按场景测量配置、开发任务、Native no-op 与 clean/cache restore：
 
 ```shell

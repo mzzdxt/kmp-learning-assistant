@@ -1,4 +1,13 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+
+val pocketLabRelease = Properties().apply {
+    rootProject.file("release.properties").inputStream().use(::load)
+}
+val pocketLabVersion = pocketLabRelease.getProperty("versionName")
+    ?: error("release.properties is missing versionName")
+val pocketLabBuild = pocketLabRelease.getProperty("buildNumber")?.toIntOrNull()
+    ?: error("release.properties has an invalid buildNumber")
 
 plugins {
     id("com.android.application")
@@ -14,8 +23,8 @@ android {
         applicationId = "dev.kmpjourney.pocketlab"
         minSdk = 24
         targetSdk = 35
-        versionCode = 17
-        versionName = "0.17.0"
+        versionCode = pocketLabBuild
+        versionName = pocketLabVersion
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

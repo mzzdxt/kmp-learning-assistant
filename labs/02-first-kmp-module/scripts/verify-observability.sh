@@ -4,6 +4,17 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PROJECT_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+RELEASE_PROPERTIES="$PROJECT_ROOT/release.properties"
+
+release_property() {
+    awk -F= -v key="$1" '$1 == key { sub(/^[^=]*=/, ""); print; exit }' \
+        "$RELEASE_PROPERTIES"
+}
+
+VERSION_NAME=$(release_property versionName)
+BUILD_NUMBER=$(release_property buildNumber)
+[ -n "$VERSION_NAME" ] || { echo "Missing versionName in release.properties" >&2; exit 1; }
+[ -n "$BUILD_NUMBER" ] || { echo "Missing buildNumber in release.properties" >&2; exit 1; }
 
 if [ -z "${GRADLE_USER_HOME:-}" ]; then
     GRADLE_USER_HOME="$PROJECT_ROOT/../.gradle-user-home"
@@ -28,15 +39,16 @@ cd "$PROJECT_ROOT"
 
 MAPPING="$PROJECT_ROOT/androidApp/build/outputs/mapping/release/mapping.txt"
 RELEASE_APK="$PROJECT_ROOT/androidApp/build/outputs/apk/release/androidApp-release-unsigned.apk"
-ANDROID_BUILD="$PROJECT_ROOT/androidApp/build.gradle.kts"
+ANDROID_METADATA="$PROJECT_ROOT/androidApp/build/outputs/apk/release/output-metadata.json"
 DIAGNOSTICS_SOURCE="$PROJECT_ROOT/shared/src/commonMain/kotlin/dev/kmpjourney/pocketlab/diagnostics/RefreshObservability.kt"
 
 [ -s "$RELEASE_APK" ] || fail 'minified Android Release APK is missing'
 [ -s "$MAPPING" ] || fail 'R8 mapping.txt is missing'
-rg -q 'versionCode = 17' "$ANDROID_BUILD" || \
-    fail 'Android Release build number is not 17'
-rg -q 'versionName = "0\.17\.0"' "$ANDROID_BUILD" || \
-    fail 'Android Release version is not 0.17.0'
+[ -s "$ANDROID_METADATA" ] || fail 'Android Release output metadata is missing'
+[ "$(plutil -extract elements.0.versionCode raw "$ANDROID_METADATA")" = \
+    "$BUILD_NUMBER" ] || fail 'Android Release build number drifted from release.properties'
+[ "$(plutil -extract elements.0.versionName raw "$ANDROID_METADATA")" = \
+    "$VERSION_NAME" ] || fail 'Android Release version drifted from release.properties'
 rg -q '^# compiler_version: 9\.1\.29$' "$MAPPING" || \
     fail 'Android Release did not use the Kotlin 2.4-compatible R8 version'
 rg -q 'ExperimentListViewModel ->' "$MAPPING" || \
@@ -98,7 +110,7 @@ fi
 
 echo "Observability contract passed."
 echo "Structured refresh schema: privacy allowlist + monotonic duration"
-echo "Android Release: 0.17.0 (17), R8 9.1.29, pg_map_id=$PG_MAP_ID"
+echo "Android Release: $VERSION_NAME ($BUILD_NUMBER), R8 9.1.29, pg_map_id=$PG_MAP_ID"
 echo "Android APK SHA-256: $APK_SHA256"
 echo "Android mapping SHA-256: $MAPPING_SHA256"
 echo "Kotlin/Native UUID: $BINARY_UUID"

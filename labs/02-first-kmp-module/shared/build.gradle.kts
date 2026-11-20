@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+import java.util.Properties
 
 plugins {
     kotlin("multiplatform")
@@ -8,7 +9,14 @@ plugins {
     id("com.android.kotlin.multiplatform.library")
 }
 
-val pocketLabVersion = "0.17.0"
+val pocketLabRelease = Properties().apply {
+    rootProject.file("release.properties").inputStream().use(::load)
+}
+val pocketLabVersion = pocketLabRelease.getProperty("versionName")
+    ?: error("release.properties is missing versionName")
+val pocketLabBuild = pocketLabRelease.getProperty("buildNumber")
+    ?.takeIf { value -> value.toIntOrNull() != null }
+    ?: error("release.properties has an invalid buildNumber")
 version = pocketLabVersion
 
 kotlin {
@@ -43,7 +51,7 @@ kotlin {
             isStatic = true
             binaryOption("bundleId", "dev.kmpjourney.pocketlab.shared")
             binaryOption("bundleShortVersionString", pocketLabVersion)
-            binaryOption("bundleVersion", "17")
+            binaryOption("bundleVersion", pocketLabBuild)
             appleBundle.add(this)
         }
     }
