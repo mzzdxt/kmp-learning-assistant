@@ -62,6 +62,14 @@ shared: Ktor + SQLDelight + platform adapters + Apple facade
 ./scripts/verify-build-performance.sh
 ```
 
+验证固定诊断 schema、Android R8 mapping 与 Native dSYM：
+
+```shell
+./scripts/verify-observability.sh
+```
+
+门禁会输出当前 Android APK/mapping SHA-256、`pg_map_id` 与 Native UUID。完整故障分类、隐私边界和符号化实验见[实验 16](../16-observability/README.md)。
+
 按场景测量配置、开发任务、Native no-op 与 clean/cache restore：
 
 ```shell

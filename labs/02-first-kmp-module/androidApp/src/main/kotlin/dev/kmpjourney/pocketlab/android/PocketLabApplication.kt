@@ -4,7 +4,7 @@ import android.app.Application
 import dev.kmpjourney.pocketlab.data.SqlDelightExperimentRepository
 import dev.kmpjourney.pocketlab.data.openAndroidPocketLabDatabase
 import dev.kmpjourney.pocketlab.demo.DemoExperimentRemoteDataSource
-import dev.kmpjourney.pocketlab.sync.RefreshExperimentsUseCase
+import dev.kmpjourney.pocketlab.diagnostics.createObservedRefreshExperimentsUseCase
 
 class PocketLabApplication : Application() {
     val graph: AndroidPocketLabGraph by lazy {
@@ -20,7 +20,7 @@ class AndroidPocketLabGraph(application: Application) {
     )
 
     val repository = SqlDelightExperimentRepository(databaseHandle.database)
-    val refreshExperiments = RefreshExperimentsUseCase(
+    val refreshExperiments = createObservedRefreshExperimentsUseCase(
         remote = DemoExperimentRemoteDataSource(),
         local = repository,
     )

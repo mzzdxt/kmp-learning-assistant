@@ -5,7 +5,7 @@ plugins {
     id("com.android.kotlin.multiplatform.library")
 }
 
-version = "0.14.0"
+version = "0.16.0"
 
 kotlin {
     jvm()

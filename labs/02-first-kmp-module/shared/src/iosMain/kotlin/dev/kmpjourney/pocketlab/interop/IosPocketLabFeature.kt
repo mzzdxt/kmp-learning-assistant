@@ -6,10 +6,10 @@ import dev.kmpjourney.pocketlab.data.PocketLabDatabaseHandle
 import dev.kmpjourney.pocketlab.data.SqlDelightExperimentRepository
 import dev.kmpjourney.pocketlab.data.openIosPocketLabDatabase
 import dev.kmpjourney.pocketlab.demo.DemoExperimentRemoteDataSource
+import dev.kmpjourney.pocketlab.diagnostics.createObservedRefreshExperimentsUseCase
 import dev.kmpjourney.pocketlab.network.ExperimentRemoteDataSource
 import dev.kmpjourney.pocketlab.network.PocketLabNetwork
 import dev.kmpjourney.pocketlab.network.createPlatformPocketLabNetwork
-import dev.kmpjourney.pocketlab.sync.RefreshExperimentsUseCase
 import kotlin.native.ObjCName
 
 /** Apple composition root: Swift owns one feature and closes it at the same boundary. */
@@ -57,7 +57,7 @@ object IosPocketLabFeatures {
     ): IosPocketLabFeature {
         val handle = openIosPocketLabDatabase(databaseName)
         val repository = SqlDelightExperimentRepository(handle.database)
-        val refresh = RefreshExperimentsUseCase(remote, repository)
+        val refresh = createObservedRefreshExperimentsUseCase(remote, repository)
         return IosPocketLabFeature(
             experimentList = IosExperimentListBridge(repository, refresh),
             databaseHandle = handle,

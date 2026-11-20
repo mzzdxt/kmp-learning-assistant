@@ -610,6 +610,57 @@
 
 对应文章：[KMP 构建为什么慢：别先加内存，先把 4 分 37 秒拆开](../articles/15-build-performance.md)
 
+---
+
+## 2026-11-20：有日志不等于能定位，能符号化也不等于证据完整
+
+### 我原来以为
+
+- Android 和 iOS 各自打印刷新错误，就算完成了跨平台日志。
+- 一个 `catch (Exception)` 可以统一错误处理，让产品更稳定。
+- exception message 是最有用、也足够安全的诊断字段。
+- Debug 堆栈有源码行，Release 自然也能定位。
+- 有一份 `mapping.txt` 或 dSYM 就够了，不必和具体 build 绑定。
+- 记录到 628 ms 后，就可以讨论性能阈值。
+
+### 实验实际发生了
+
+- `:domain` 新增 typed diagnostics lifecycle，只表达 started 后的 applied、failed、cancelled 或 crashed；平台日志 API 没有进入领域层。
+- 可预期 failure 保持稳定 result；`CancellationException` 与未预期异常被观察后都原样重抛；故意损坏的诊断后端不能覆盖有效结果。
+- `:shared` 生成固定 schema、correlation ID 和 monotonic duration；record 没有任意 attributes map，也不容纳标题、笔记、URL、数据库路径和异常 message。
+- token 经过长度限制和字符清理，换行不能伪造第二条日志。
+- Android 使用 `Log`，JVM 使用 stdout/stderr，iOS 当前用最小 `NSLog` adapter；三端共享语义而不是共享平台 SDK。
+- 第一次 minified Release 构建成功却出现 Kotlin 2.4 metadata parse warnings；根据官方兼容表覆盖为 R8 9.1.29 后警告消失。
+- signed Release 副本在 Pixel 2 API 34 模拟器冷启动成功，输出同一 correlation ID 的 started/finished；单次刷新为 628 ms、接收和变更各 3 条。
+- observability gate 保存 Android `0.16.0 (16)` 的 `pg_map_id`、APK/mapping SHA-256，并检查应用、domain 与 shared source-line metadata。
+- Kotlin/Native test executable 与 dSYM UUID 完全一致，`atos` 恢复了共同诊断测试函数名；源码行仍为 0，证据没有被夸大。
+- Xcode Release 已配置 `dwarf-with-dsym`，但 Xcode 26.5 缺匹配 runtime，最终 SwiftUI App archive/dSYM 仍未生成。
+- domain/shared 更新为 50/50/58；Android unit/Compose 合计 4 条后，可运行矩阵为 162/162。仓库共有 65 个不同场景、163 次目标执行，剩余一条仍是 iOS UI smoke。
+
+### 原因
+
+- 业务失败、取消、未预期异常、crash 和 ANR/hang 属于不同控制流，不能被一条“refresh failed”抹平。
+- 可观测性是旁路能力；后端失败若改变业务结果，就不再只是观察。
+- exception message 可能由底层库拼入 URL、路径、响应或用户数据；类型名和稳定 reason 更易审计。
+- duration 应使用只前进的 monotonic clock；wall clock 可能被系统校时。
+- R8 mapping 和 dSYM 都只对应特定 binary。错误符号文件可能生成看似合理的错误堆栈。
+- 日志回答单次操作，trace 拆解时间线，crash/ANR/hang 提供故障现场，metrics 才能比较群体与版本分布。
+
+### 对工程决策的影响
+
+- `scripts/verify-observability.sh` 成为 Release 诊断门禁，验证 schema、隐私、R8、mapping、Native UUID、`atos` 与 Apple header。
+- Android 发布记录必须绑定 version/build、commit、APK/AAB、mapping、SHA-256、`pg_map_id` 与工具链版本。
+- Apple 发布记录必须保存最终 archive、binary/dSYM UUID、version/build 与 commit；Native test dSYM 不能替代最终 App archive。
+- 当前 iOS `NSLog` 只作为实验 adapter；生产接入应迁移 Logger/OSLog、隐私标记和 signpost，而不改共同 schema。
+- 不安装会吞异常的全局 handler，不把所有异常转换成 network failure，不记录原始 message/DTO。
+- 628 ms 与 1,414 ms 冷启动只证明本地 Release smoke 可达；性能预算等待真实设备分层和 p50/p95/p99。
+
+对应决策记录：[ADR-0014](../docs/adr/0014-cross-platform-observability.md)
+
+对应实验：[实验 16](../labs/16-observability/README.md)
+
+对应文章：[KMP 出问题时，谁来作证：从一条 628 ms 日志到可符号化崩溃](../articles/16-cross-platform-observability.md)
+
 
 
 

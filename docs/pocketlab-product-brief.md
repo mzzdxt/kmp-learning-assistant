@@ -141,14 +141,14 @@ PocketLab 按责任和风险组织测试，而不追求固定的单元/集成/UI
 → Android ViewModel / Compose → SwiftUI XCTest smoke
 ```
 
-- 38 个共同场景按所有权分布在 `domain/commonTest` 与 `shared/commonTest`，分别在 JVM、Android Host 与 iOS x64 执行；
-- domain 每个目标 18 条；shared 在 JVM/Android Host/iOS x64 分别为 21/21/29，聚合仍为 39/39/47；
+- 49 个共同场景按所有权分布在 `domain/commonTest` 与 `shared/commonTest`，分别在 JVM、Android Host 与 iOS x64 执行；
+- domain 每个目标 23 条；shared 在 JVM/Android Host/iOS x64 分别为 27/27/35，聚合为 50/50/58；
 - 共同集成测试使用真实 Refresh UseCase、SQLDelight Repository、transaction 与 Flow，外部 remote 保持确定性；
 - iOS 专用测试覆盖 callback、refresh、取消、异常与资源关闭；
 - Android Compose 测试只验证 state 渲染和 intent 转发，不复制共同业务分支；
 - iOS UI 测试使用唯一数据库冷启动真实 App，并验证首次刷新与幂等刷新；上一完整基线为 1/1，本轮因 Xcode 26.5 缺少匹配 runtime 未重新执行；
 - Native 专用测试用弱引用证明纯 Kotlin 强引用环可被 tracing GC 回收；共同并发测试让两个 dispatcher 通过 `Mutex` 安全修改同一对象；
-- 仓库共有 54 个不同测试场景、130 次目标执行；本轮可运行矩阵为 129/129，剩余 1 条 iOS UI 等待匹配 runtime，两种计数与验证时间不得混用；
+- 仓库共有 65 个不同测试场景、163 次目标执行；本轮可运行矩阵为 162/162，剩余 1 条 iOS UI 等待匹配 runtime，两种计数与验证时间不得混用；
 - 异步测试使用虚拟时间、Compose 同步或条件等待，不使用固定 sleep。
 
 ## 当前 Native runtime 边界
@@ -239,4 +239,24 @@ JVM 日常反馈 → Android 风险 → Apple 单架构 Debug
 - 私有 domain 实现改动没有触发 shared/App 重新编译，公共 ABI 改动会正确沿依赖图传播；
 - 不默认执行 `clean`，不在缺少证据时增加 heap、开启 Beta Native incremental 或 Release binary cache；
 - 原始编译报告和日志可能含本机路径，只提交去标识化实验记录。
+
+## 当前可观测性边界
+
+PocketLab 用共同事件语义和平台诊断工具组成一条可验证证据链：
+
+```text
+typed refresh lifecycle
+→ fixed privacy allowlist schema + correlation ID + monotonic duration
+→ Android Log / JVM stdout / iOS NSLog adapter
+→ R8 mapping / Native dSYM / release artifact identity
+```
+
+- 刷新明确区分 `applied`、可预期 `failed`、`cancelled` 与未预期 `crashed`；取消和异常被观察后原样重抛；
+- `:domain` 只拥有生命周期端口，`:shared` 定义 schema 与平台 writer，日志后端失败不能改变产品行为；
+- schema 不提供任意 message/attributes map，不允许标题、笔记、URL、数据库路径、token、异常 message 或原始响应；
+- duration 使用 `TimeSource.Monotonic`，单次 628 ms 样本只作为现场证据，不作为性能预算；
+- Android `0.16.0 (16)` Release 开启 R8 minify/resource shrink，并固定 Kotlin 2.4 兼容的 R8 9.1.29；每个发布物需保存匹配 APK/AAB、mapping、SHA-256 与 `pg_map_id`；
+- Apple Release 配置为 `DWARF with dSYM`；binary 与 dSYM 必须 UUID 匹配，最终 App archive 由 Xcode 发布流水线保存；
+- 当前门禁已用 `iosX64` test executable/dSYM 和 `atos` 恢复 Kotlin 函数名，但最终 SwiftUI App archive 仍受 Xcode 26.5 runtime 缺失阻断；
+- 日志不替代 Perfetto/Instruments、Android ANR/vitals、Apple MetricKit 或版本化性能指标。
 

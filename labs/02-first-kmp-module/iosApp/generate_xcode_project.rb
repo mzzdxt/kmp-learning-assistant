@@ -58,8 +58,10 @@ target.build_configurations.each do |configuration|
   # platform sqlite3 API, so the final application target owns that system link.
   settings["OTHER_LDFLAGS"] = "$(inherited) -framework PocketLabShared -lsqlite3"
   settings["ONLY_ACTIVE_ARCH"] = configuration.name == "Debug" ? "YES" : "NO"
-  settings["CURRENT_PROJECT_VERSION"] = "1"
-  settings["MARKETING_VERSION"] = "1.0"
+  settings["DEBUG_INFORMATION_FORMAT"] =
+    configuration.name == "Debug" ? "dwarf" : "dwarf-with-dsym"
+  settings["CURRENT_PROJECT_VERSION"] = "16"
+  settings["MARKETING_VERSION"] = "0.16.0"
 end
 
 ui_test_target.build_configurations.each do |configuration|

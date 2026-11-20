@@ -16,7 +16,7 @@ SIMULATOR_FRAMEWORK="$XCFRAMEWORK/ios-arm64_x86_64-simulator/PocketLabShared.fra
 PACKAGE_TEMPLATE="$PROJECT_ROOT/distribution/apple/Package.swift"
 STAGING_ROOT="$PROJECT_ROOT/build/apple-distribution"
 PACKAGE_ROOT="$STAGING_ROOT/SwiftPackage"
-ARCHIVE="$STAGING_ROOT/PocketLabShared-0.14.0.xcframework.zip"
+ARCHIVE="$STAGING_ROOT/PocketLabShared-0.16.0.xcframework.zip"
 
 cd "$PROJECT_ROOT"
 
@@ -42,9 +42,9 @@ for FRAMEWORK in "$DEVICE_FRAMEWORK" "$SIMULATOR_FRAMEWORK"; do
     [ "$(plutil -extract CFBundleIdentifier raw "$PLIST")" = \
         "dev.kmpjourney.pocketlab.shared" ] || fail "unexpected bundle identifier"
     [ "$(plutil -extract CFBundleShortVersionString raw "$PLIST")" = \
-        "0.14.0" ] || fail "unexpected marketing version"
+        "0.16.0" ] || fail "unexpected marketing version"
     [ "$(plutil -extract CFBundleVersion raw "$PLIST")" = \
-        "14" ] || fail "unexpected bundle version"
+        "16" ] || fail "unexpected bundle version"
     file "$FRAMEWORK/PocketLabShared" | rg -q 'archive' || \
         fail "framework binary is not static"
 done

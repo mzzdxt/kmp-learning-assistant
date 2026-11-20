@@ -8,7 +8,7 @@ plugins {
     id("com.android.kotlin.multiplatform.library")
 }
 
-val pocketLabVersion = "0.14.0"
+val pocketLabVersion = "0.16.0"
 version = pocketLabVersion
 
 kotlin {
@@ -43,7 +43,7 @@ kotlin {
             isStatic = true
             binaryOption("bundleId", "dev.kmpjourney.pocketlab.shared")
             binaryOption("bundleShortVersionString", pocketLabVersion)
-            binaryOption("bundleVersion", "14")
+            binaryOption("bundleVersion", "16")
             appleBundle.add(this)
         }
     }
