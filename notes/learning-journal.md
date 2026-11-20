@@ -760,6 +760,57 @@
 对应文章：[KMP、Flutter、React Native 与纯原生：别只比较代码复用率](../articles/18-mobile-strategy-decision.md)
 
 
+---
+
+## 2026-11-20：共享一张卡片，和把 UI 所有权交出去，不是同一件事
+
+### 我原来以为
+
+- KMP 已经共享业务逻辑，再共享 Compose UI 只是把 Composable 移到 `commonMain`。
+- Compose Multiplatform Stable，最新版应该能直接加入现有工程。
+- Android 开发者熟悉 Jetpack Compose，就能自然覆盖 iOS UI。
+- framework 能生成，就说明 iOS 已经验证完成。
+- framework binary 大小就是最终 App 包体增量。
+- 构建 OOM 时给 Gradle 多加 heap 即可。
+
+### 实验实际发生了
+
+- 新建独立 `sharedUi`，只实现 `ExperimentSummaryCard`；它不依赖 domain/shared/Ktor/SQLDelight，production modules 也不依赖它。
+- Compose Multiplatform 1.12.2 首先因没有 `iosX64` variant 失败；官方从 1.11.1 起已经移除全部 Apple x86_64 artifacts。
+- 去掉 `iosX64` 后，1.12.2 的 Android Debug/test 和 iOS Debug framework 可构建，但 Release AAR metadata 要求 compileSdk 37 / AGP 9.1，超过当前 36 / 8.13.2 baseline。
+- 改用 1.11.1 且不加入 alpha Material 3 后，Android AAR、iOS device/Simulator arm64 Release frameworks 和 Swift 6 strict consumer 全部构建成功。
+- Android host contract tests 2/2；arm64 Simulator test executable 能交叉编译，但 Intel host 明确跳过 runtime test，没有被写成通过。
+- 第一版 Apple header 为 244 行，泄漏 UI model/status；用 `@HiddenFromObjC` 后降为 157 行，presentation-model leaks 为 0。
+- Android AAR 为 16,460 bytes；iOS device static framework binary 为 103,941,976 bytes，但没有最终 App before/after，所以不把 104 MB 写成下载增量。
+- 三个 Native link tasks 并行让 2 GiB daemon OOM；`--max-workers=1` 在相同 heap 完成，证明问题是并发峰值，但用 10m10s wall time 换取峰值控制；随后 cache reuse/up-to-date 为 2s。
+- PocketLab production runtime 没有接入 `sharedUi`，App 继续为 0.17.0/build 17。
+
+### 原因
+
+- KMP 决定跨目标编译与选择性共享；Compose Multiplatform 额外决定 UI rendering ownership，二者不是同一个开关。
+- 共享组件、页面、导航与 App shell 会依次引入 presentation、state、lifecycle、platform view、release 和 on-call ownership，成本非线性增长。
+- framework 的可生成性只证明编译/链接；Simulator/设备 rendering、VoiceOver、Dynamic Type、输入和 Instruments 仍需 runtime evidence。
+- Compose Multiplatform Android artifacts 映射到具体 Jetpack Compose 版本，所以 Compose 升级也可能触发 compileSdk/AGP migration。
+- Apple framework API 仍通过 Kotlin/Native interop 生成；不需要的 public presentation type 会成为 Swift/Objective-C ABI。
+- Native linking 的并发数、heap 与 wall time 是三个不同变量，单次 OOM 不能直接证明应提高全局内存。
+
+### 对工程决策的影响
+
+- 原生 Compose/SwiftUI 继续作为 production 默认，Compose Multiplatform 只作为独立 leaf-component candidate。
+- `sharedLogic` 与 `sharedUi` 必须分 module；不需要 UI 的 consumer 不能被迫引入 Compose dependencies。
+- shared UI 当前只拥有 presentation/accessibility/callback，不拥有 navigation、lifecycle、persistence、network 或 domain record。
+- production 接入前必须补 Apple Silicon `iosSimulatorArm64Test`、真实 iPhone rendering、VoiceOver/Dynamic Type、screenshot 和 Release App size/performance before/after。
+- Compose 1.12.x + AGP 9.1/API 37 作为独立 build-chain migration 验证，不藏在 UI spike 里。
+- 当前门禁用 single worker 控制 2 GiB 下的 Native link 峰值；是否增加 heap 或拆 CI lane 等 Apple Silicon 数据。
+- 从 leaf 扩大到 stateful component、screen 或 navigation 时，每一级都重新写 ownership、故障域和退出条件。
+
+对应决策记录：[ADR-0017](../docs/adr/0017-bound-compose-multiplatform-adoption.md)
+
+对应实验：[实验 19](../labs/19-compose-multiplatform/README.md)
+
+对应文章：[Compose Multiplatform 要不要上？一份决策清单](../articles/19-compose-multiplatform-decision.md)
+
+
 
 
 

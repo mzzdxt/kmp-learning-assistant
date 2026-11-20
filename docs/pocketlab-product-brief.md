@@ -302,3 +302,29 @@ architecture facts
 
 完整决策见 [ADR-0016](adr/0016-keep-kmp-native-ui-for-pocketlab.md)。
 
+## 当前 Compose Multiplatform 边界
+
+PocketLab 不把“使用 KMP”自动升级为“共享全部 UI”，而是把 Compose Multiplatform 隔离为一个可删除的叶子组件实验：
+
+```text
+production:
+Android Compose / iOS SwiftUI → domain + shared
+
+optional spike:
+sharedUi → ExperimentSummaryCard → Android AAR / iOS UIViewController factory
+```
+
+- `sharedUi` 不依赖 domain、shared、Ktor 或 SQLDelight；production modules 也不依赖 `sharedUi`；
+- 当前只共享 presentation、accessibility semantics 和 `onOpen` intent，不共享 navigation、lifecycle、persistence、network 或 domain records；
+- Compose Multiplatform 1.11.1 已在 AGP 8.13.2 / compileSdk 36 基线上生成 Android AAR 与 iOS device/Simulator arm64 Release frameworks；
+- Compose Multiplatform 1.12.2 对应 Android artifacts 要求 compileSdk 37 / AGP 9.1，该 build-chain migration 不由 UI spike 隐式触发；
+- Apple x86_64 Compose artifacts 已移除，Intel host 只能交叉编译 arm64 Simulator，不能把 skipped runtime test 写成通过；
+- Swift 6 strict consumer 通过，Apple header 从 244 行收紧到 157 行，presentation-model leaks 为 0；
+- 多个 Native link tasks 并行会让当前 2 GiB daemon OOM；门禁使用 single worker 保持资源上限，后续用 Apple Silicon CI 数据决定 heap/lanes；
+- static framework binary 约 104 MB 只是中间产物，不代表最终 App 下载增量；生产采用前必须补同一 Release App before/after；
+- 当前 production UI 和 App 版本均未改变，仍为 0.17.0/build 17。
+
+从 leaf component 扩大到页面前，必须补 Apple Silicon Simulator、真实 iPhone rendering、VoiceOver/Dynamic Type、screenshot、Release startup/frame/memory/size 与 rollback evidence。
+
+完整决策见 [ADR-0017](adr/0017-bound-compose-multiplatform-adoption.md)，实验见[实验 19](../labs/19-compose-multiplatform/README.md)。
+

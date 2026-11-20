@@ -30,9 +30,14 @@ domain: rules + models + ports + use cases + state machines
 shared: Ktor + SQLDelight + platform adapters + Apple facade
   ├→ androidApp
   └→ PocketLabShared framework → iosApp
+
+sharedUi: optional Compose Multiplatform leaf-component spike
+  ├→ Android AAR
+  └→ PocketLabSharedUi framework → UIViewController factory
 ```
 
 完整拆分过程与 `api` / framework `export` 的区别见[实验 14](../14-kmp-modularization/README.md)。
+`sharedUi` 不依赖 domain/shared，production modules 也不依赖它；完整边界和版本实验见[实验 19](../19-compose-multiplatform/README.md)。
 
 ## 运行
 
@@ -86,6 +91,14 @@ shared: Ktor + SQLDelight + platform adapters + Apple facade
 
 门禁先执行不可补偿的 hard gates，再计算场景权重，并要求四个示例分别由四种方案胜出。它验证决策过程，不冒充 runtime benchmark。完整方法见[实验 18](../18-mobile-strategy/README.md)。
 
+验证独立 Compose Multiplatform 叶子组件、Android AAR、iOS arm64 Release frameworks、Swift 6 consumer 与依赖边界：
+
+```shell
+./scripts/verify-compose-shared-ui.sh
+```
+
+门禁使用 Compose Multiplatform 1.11.1 与当前 AGP 8.13.2 / compileSdk 36 baseline，拒绝 Apple `iosX64`、presentation model header 泄漏和 production module 反向依赖。Intel host 只交叉编译 arm64 Simulator test/framework，不把 skipped runtime test 伪装成通过。完整决策见[实验 19](../19-compose-multiplatform/README.md)。
+
 按场景测量配置、开发任务、Native no-op 与 clean/cache restore：
 
 ```shell
@@ -116,7 +129,7 @@ shared: Ktor + SQLDelight + platform adapters + Apple facade
 - Kotlin 2.4.21（当前稳定版）
 - Android Gradle Plugin 8.13.2
 - Gradle 8.14.4
-- Android compileSdk 35 / minSdk 24
+- Android App 与 `sharedUi` compileSdk 36，`domain/shared` library compileSdk 35，minSdk 24
 
 这些组合同时满足 Kotlin、AGP 与 Gradle 三方兼容要求。实验刻意使用 Google 新的 Android-KMP library plugin；旧教程里的 `com.android.library + androidTarget()` 正在迁移，不应成为新工程的默认示范。
 

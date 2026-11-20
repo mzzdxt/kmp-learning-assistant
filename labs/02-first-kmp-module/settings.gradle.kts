@@ -30,5 +30,6 @@ dependencyResolutionManagement {
 rootProject.name = "first-kmp-module"
 include(":domain")
 include(":shared")
+include(":sharedUi")
 include(":androidApp")
 
