@@ -712,6 +712,53 @@
 
 对应文章：[别把现有 App 一夜搬进 commonMain：一条可回滚的 KMP 迁移路线](../articles/17-incremental-kmp-adoption.md)
 
+---
+
+## 2026-11-20：选跨平台方案是在设计 ownership，不是在争夺复用率冠军
+
+### 我原来以为
+
+- 代码复用率越高，跨平台方案越先进。
+- KMP、Flutter、React Native 与纯原生可以用同一张能力表直接排名。
+- Flutter 和 React Native 适合 greenfield，只有 KMP 能渐进接入存量 App。
+- React Native 仍然是所有 JavaScript 调用都经过旧 bridge。
+- 四个 Hello World 的启动与包体就能证明性能差异。
+- 加权总分最高的方案应该胜出。
+
+### 实验实际发生了
+
+- 先固定 KMP 候选为“共享 business/data + Compose/SwiftUI”，避免在 native UI 与 Compose Multiplatform 之间移动 scope。
+- 用官方架构资料记录四个候选的 UI owner、shared owner、platform boundary 和 brownfield unit；Flutter/RN 官方也都有存量集成路径。
+- 建立 11 个 criteria、`0..5` rating、场景权重和不可补偿的 hard gates；计算器只使用 Ruby 标准库。
+- 初版脚本因 Ruby 2.6 不支持 `filter_map` 失败，改为 `each_with_object`；门禁的 scope 文案也经过一次精确匹配修复。
+- 四个场景分别由 KMP、Flutter、React Native 和纯原生胜出，机器检查禁止模型暗藏 universal winner。
+- PocketLab 中 KMP 92.2、纯原生 77.8 且都通过 gate；Flutter/RN 因改变当前 UI/runtime owner 而退出，不是因为缺少 add-to-app 能力。
+- greenfield branded UI 中 Flutter 85.6、RN 80.8，只差 4.8；结论不是继续调分，而是做同题 Release spike。
+- deep platform 场景中 KMP weighted fit 88.6 高于纯原生 87.1，但没有通过 platform API gate，最终仍由纯原生胜出。
+- 本轮没有修改 mobile runtime，PocketLab 保持 0.17.0/build 17，没有为了文章编号制造虚假 App release。
+
+### 原因
+
+- KMP 主要共享业务/数据，Flutter 共享 rendering system，React Native 共享 React feature，纯原生主要共享契约；四者的“复用”分母不同。
+- hard gate 表达法规、资产、平台或人员的不可接受状态，不能被多个偏好高分平均掉。
+- brownfield 能力不是二元属性，真正差异是可迁移的层：logic module、rendered screen 还是 native component。
+- runtime 架构说明边界，不直接证明真实 App 的 startup、frame、memory 或 binary 预算。
+- 语言人数不等于 production ownership；native SDK、build/release、diagnostics 和 on-call 必须有人负责。
+
+### 对工程决策的影响
+
+- PocketLab 继续 KMP shared business/data + Android Compose + iOS SwiftUI，并把 Compose Multiplatform 留给独立决策。
+- 任何技术路线比较必须先批准候选 scope 和 hard gates，再讨论权重。
+- 分数接近的候选使用同一用户旅程、Release build、真实设备、共同性能/诊断预算做 time-boxed spike。
+- 官方文档只证明能力与架构；仓库、依赖、团队和 Release evidence 决定当前项目是否适用。
+- ADR 必须包含 rejected alternatives、owner、review date 和 reversal triggers，避免技术路线变成身份认同。
+
+对应决策记录：[ADR-0016](../docs/adr/0016-keep-kmp-native-ui-for-pocketlab.md)
+
+对应实验：[实验 18](../labs/18-mobile-strategy/README.md)
+
+对应文章：[KMP、Flutter、React Native 与纯原生：别只比较代码复用率](../articles/18-mobile-strategy-decision.md)
+
 
 
 

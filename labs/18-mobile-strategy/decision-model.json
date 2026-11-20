@@ -1,0 +1,264 @@
+{
+  "schemaVersion": 1,
+  "ratingScale": {
+    "minimum": 0,
+    "maximum": 5,
+    "meaning": "A PocketLab-specific fit hypothesis: 0 means the strategy works against the criterion; 5 means it supports the criterion directly. It is not a universal framework score."
+  },
+  "criteria": [
+    {
+      "id": "preserve_native_assets",
+      "label": "Preserve existing native assets"
+    },
+    {
+      "id": "share_business_rules",
+      "label": "Share business rules"
+    },
+    {
+      "id": "share_ui_delivery",
+      "label": "Share UI delivery"
+    },
+    {
+      "id": "native_ui_ownership",
+      "label": "Own native UI directly"
+    },
+    {
+      "id": "platform_api_velocity",
+      "label": "Adopt platform APIs immediately"
+    },
+    {
+      "id": "brownfield_reversibility",
+      "label": "Migrate and roll back by slice"
+    },
+    {
+      "id": "single_mobile_team",
+      "label": "Deliver with one mobile feature team"
+    },
+    {
+      "id": "kotlin_team_fit",
+      "label": "Use an existing Kotlin team"
+    },
+    {
+      "id": "react_web_team_fit",
+      "label": "Use an existing React and TypeScript team"
+    },
+    {
+      "id": "runtime_boundary_simplicity",
+      "label": "Keep runtime boundaries small"
+    },
+    {
+      "id": "branded_ui_consistency",
+      "label": "Own one branded rendering system"
+    }
+  ],
+  "strategies": [
+    {
+      "id": "kmp_native_ui",
+      "label": "KMP with native UI",
+      "architecture": {
+        "uiOwner": "Jetpack Compose and SwiftUI",
+        "sharedOwner": "Kotlin business and data modules",
+        "platformBoundary": "Kotlin/JVM and Kotlin/Native interop",
+        "brownfieldUnit": "Logic module or vertical feature slice"
+      },
+      "ratings": {
+        "preserve_native_assets": 5,
+        "share_business_rules": 5,
+        "share_ui_delivery": 0,
+        "native_ui_ownership": 5,
+        "platform_api_velocity": 4,
+        "brownfield_reversibility": 5,
+        "single_mobile_team": 3,
+        "kotlin_team_fit": 5,
+        "react_web_team_fit": 1,
+        "runtime_boundary_simplicity": 4,
+        "branded_ui_consistency": 3
+      }
+    },
+    {
+      "id": "flutter",
+      "label": "Flutter",
+      "architecture": {
+        "uiOwner": "Flutter widgets and rendering engine",
+        "sharedOwner": "Dart application and UI",
+        "platformBoundary": "Plugins, platform channels, and embedders",
+        "brownfieldUnit": "Embedded Flutter view or screen"
+      },
+      "ratings": {
+        "preserve_native_assets": 2,
+        "share_business_rules": 5,
+        "share_ui_delivery": 5,
+        "native_ui_ownership": 1,
+        "platform_api_velocity": 3,
+        "brownfield_reversibility": 3,
+        "single_mobile_team": 5,
+        "kotlin_team_fit": 1,
+        "react_web_team_fit": 1,
+        "runtime_boundary_simplicity": 2,
+        "branded_ui_consistency": 5
+      }
+    },
+    {
+      "id": "react_native",
+      "label": "React Native",
+      "architecture": {
+        "uiOwner": "React components backed by native components",
+        "sharedOwner": "TypeScript and React feature code",
+        "platformBoundary": "JSI, Turbo Native Modules, and Fabric components",
+        "brownfieldUnit": "Embedded React Native view or screen"
+      },
+      "ratings": {
+        "preserve_native_assets": 2,
+        "share_business_rules": 5,
+        "share_ui_delivery": 4,
+        "native_ui_ownership": 3,
+        "platform_api_velocity": 3,
+        "brownfield_reversibility": 3,
+        "single_mobile_team": 5,
+        "kotlin_team_fit": 1,
+        "react_web_team_fit": 5,
+        "runtime_boundary_simplicity": 2,
+        "branded_ui_consistency": 4
+      }
+    },
+    {
+      "id": "pure_native",
+      "label": "Pure native",
+      "architecture": {
+        "uiOwner": "Jetpack Compose and SwiftUI",
+        "sharedOwner": "No application code shared by default",
+        "platformBoundary": "Server contract and product specification",
+        "brownfieldUnit": "Native module, screen, or component"
+      },
+      "ratings": {
+        "preserve_native_assets": 5,
+        "share_business_rules": 1,
+        "share_ui_delivery": 0,
+        "native_ui_ownership": 5,
+        "platform_api_velocity": 5,
+        "brownfield_reversibility": 5,
+        "single_mobile_team": 1,
+        "kotlin_team_fit": 3,
+        "react_web_team_fit": 1,
+        "runtime_boundary_simplicity": 5,
+        "branded_ui_consistency": 3
+      }
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "pocketlab_brownfield",
+      "label": "PocketLab brownfield migration",
+      "decisionQuestion": "Which strategy preserves two native apps while sharing their business and data rules?",
+      "gates": [
+        {
+          "criterion": "native_ui_ownership",
+          "minimum": 5,
+          "reason": "The current Compose and SwiftUI experiences remain product-owned."
+        },
+        {
+          "criterion": "preserve_native_assets",
+          "minimum": 5,
+          "reason": "The existing Android and iOS codebases cannot be replaced as one launch project."
+        }
+      ],
+      "weights": {
+        "preserve_native_assets": 5,
+        "share_business_rules": 5,
+        "share_ui_delivery": 0,
+        "native_ui_ownership": 5,
+        "platform_api_velocity": 4,
+        "brownfield_reversibility": 5,
+        "single_mobile_team": 2,
+        "kotlin_team_fit": 5,
+        "react_web_team_fit": 0,
+        "runtime_boundary_simplicity": 4,
+        "branded_ui_consistency": 1
+      },
+      "expectedWinner": "kmp_native_ui"
+    },
+    {
+      "id": "greenfield_branded_product",
+      "label": "Greenfield branded product",
+      "decisionQuestion": "Which strategy best serves one mobile team building one highly consistent custom UI from scratch?",
+      "gates": [
+        {
+          "criterion": "share_ui_delivery",
+          "minimum": 4,
+          "reason": "One shared UI implementation is a launch constraint, not a preference."
+        }
+      ],
+      "weights": {
+        "preserve_native_assets": 0,
+        "share_business_rules": 4,
+        "share_ui_delivery": 5,
+        "native_ui_ownership": 0,
+        "platform_api_velocity": 2,
+        "brownfield_reversibility": 0,
+        "single_mobile_team": 5,
+        "kotlin_team_fit": 1,
+        "react_web_team_fit": 1,
+        "runtime_boundary_simplicity": 2,
+        "branded_ui_consistency": 5
+      },
+      "expectedWinner": "flutter"
+    },
+    {
+      "id": "react_web_team_extension",
+      "label": "React web team extends to mobile",
+      "decisionQuestion": "Which strategy lets an established React and TypeScript team own mobile features while retaining native escape hatches?",
+      "gates": [
+        {
+          "criterion": "react_web_team_fit",
+          "minimum": 4,
+          "reason": "The staffed team and its delivery language are fixed for the first release."
+        }
+      ],
+      "weights": {
+        "preserve_native_assets": 1,
+        "share_business_rules": 4,
+        "share_ui_delivery": 5,
+        "native_ui_ownership": 1,
+        "platform_api_velocity": 2,
+        "brownfield_reversibility": 2,
+        "single_mobile_team": 5,
+        "kotlin_team_fit": 0,
+        "react_web_team_fit": 5,
+        "runtime_boundary_simplicity": 2,
+        "branded_ui_consistency": 3
+      },
+      "expectedWinner": "react_native"
+    },
+    {
+      "id": "deep_platform_product",
+      "label": "Deep platform product",
+      "decisionQuestion": "Which strategy minimizes indirection for a product dominated by new OS APIs and platform-specific interaction?",
+      "gates": [
+        {
+          "criterion": "native_ui_ownership",
+          "minimum": 5,
+          "reason": "The UI is itself a platform capability rather than a portable product surface."
+        },
+        {
+          "criterion": "platform_api_velocity",
+          "minimum": 5,
+          "reason": "New OS APIs must be adopted without waiting for or maintaining a cross-platform adapter."
+        }
+      ],
+      "weights": {
+        "preserve_native_assets": 4,
+        "share_business_rules": 2,
+        "share_ui_delivery": 0,
+        "native_ui_ownership": 5,
+        "platform_api_velocity": 5,
+        "brownfield_reversibility": 3,
+        "single_mobile_team": 1,
+        "kotlin_team_fit": 1,
+        "react_web_team_fit": 0,
+        "runtime_boundary_simplicity": 5,
+        "branded_ui_consistency": 2
+      },
+      "expectedWinner": "pure_native"
+    }
+  ]
+}

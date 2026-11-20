@@ -78,6 +78,14 @@ shared: Ktor + SQLDelight + platform adapters + Apple facade
 
 门禁会用 Android legacy fixture 与 Swift compile-only fixture 证明同一 ViewModel 可切换实现，同时拒绝 KMP 类型扩散到宿主 UI 和 production dual write。完整迁移方法见[实验 17](../17-incremental-adoption/README.md)。
 
+验证 KMP、Flutter、React Native 与纯原生的约束优先决策模型：
+
+```shell
+../18-mobile-strategy/scripts/verify-mobile-strategy.sh
+```
+
+门禁先执行不可补偿的 hard gates，再计算场景权重，并要求四个示例分别由四种方案胜出。它验证决策过程，不冒充 runtime benchmark。完整方法见[实验 18](../18-mobile-strategy/README.md)。
+
 按场景测量配置、开发任务、Native no-op 与 clean/cache restore：
 
 ```shell

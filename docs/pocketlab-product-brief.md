@@ -280,3 +280,25 @@ SwiftUI / ViewModel         → Swift ExperimentListGateway ───┘
 - 0.17.0 minified Android Release 已通过真实启动和刷新 smoke；远端 cohort/flag、schema 降级和 iOS runtime rollout 尚未实现；
 - migration flag 若引入，必须有 owner、稳定选择作用域、过期日期和 legacy 删除条件，不能永久双轨。
 
+## 当前移动技术路线决策
+
+PocketLab 在 KMP + 原生 UI、Flutter、React Native 与纯原生之间采用约束优先评估：
+
+```text
+architecture facts
+→ hard gates
+→ scenario weights
+→ eligible candidate
+→ same-problem Release spike when close
+```
+
+- 当前 hard gates 要求 Compose/SwiftUI 继续直接拥有 UI，并保留现有 Android/iOS 资产；
+- KMP + 原生 UI 与纯原生通过 gate，Flutter/React Native 的当前候选定义会改变 feature UI/runtime owner；
+- KMP 场景得分 92.2，纯原生 77.8；KMP 胜出是因为当前核心问题是 business/data rule duplication，不是因为它具有通用最高分；
+- greenfield 强品牌 UI 场景由 Flutter 领先，既有 React/TypeScript team 场景由 React Native 领先，深度平台产品由纯原生领先；
+- weighted score 不能覆盖 hard gate，相近候选必须做同一用户旅程的 Release spike；
+- 本轮没有修改 mobile runtime，App 继续为 0.17.0/build 17，不为文档里程碑制造无意义版本；
+- Compose Multiplatform shared UI 属于下一项独立 UI ownership 决策，不混入 KMP + 原生 UI 候选。
+
+完整决策见 [ADR-0016](adr/0016-keep-kmp-native-ui-for-pocketlab.md)。
+
