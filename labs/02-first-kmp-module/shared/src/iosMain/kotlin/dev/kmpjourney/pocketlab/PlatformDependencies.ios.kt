@@ -4,7 +4,7 @@ import platform.CoreFoundation.CFAbsoluteTimeGetCurrent
 import platform.CoreFoundation.kCFAbsoluteTimeIntervalSince1970
 import platform.Foundation.NSUUID
 
-actual fun createPlatformClock(): EpochClock = object : EpochClock {
+internal actual fun createPlatformClock(): EpochClock = object : EpochClock {
     override fun nowMilliseconds(): Long =
         (
             (CFAbsoluteTimeGetCurrent() + kCFAbsoluteTimeIntervalSince1970) *
@@ -12,7 +12,7 @@ actual fun createPlatformClock(): EpochClock = object : EpochClock {
         ).toLong()
 }
 
-actual fun createPlatformIdGenerator(): ExperimentIdGenerator = object : ExperimentIdGenerator {
+internal actual fun createPlatformIdGenerator(): ExperimentIdGenerator = object : ExperimentIdGenerator {
     override fun nextId(): String = NSUUID().UUIDString()
 }
 

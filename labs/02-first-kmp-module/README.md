@@ -8,7 +8,7 @@
 
 ## 工程中有什么
 
-`StudyStreakPolicy` 位于 `commonMain`，不依赖平台 API。它的测试位于 `commonTest`，会被不同目标的测试 compilation 复用。
+`StudyStreakPolicy` 现在位于 `domain/commonMain`，不依赖平台 API。它的测试位于 `domain/commonTest`，会被不同目标的测试 compilation 复用。实验 14 已把原来的单一 shared 工程拆为 `domain + shared`；本页前半仍保留实验 02 当时的最小心智模型与基线。
 
 `platformName()` 在 `commonMain` 中只有 `expect` 声明，在三个平台 source set 中分别提供 `actual`：
 
@@ -22,25 +22,44 @@ commonMain
     └── iosArm64            → iPhone / iPad device
 ```
 
+当前工程的模块依赖为：
+
+```text
+domain: rules + models + ports + use cases + state machines
+  ↓ api dependency for Kotlin consumers; linked but not exported to Apple
+shared: Ktor + SQLDelight + platform adapters + Apple facade
+  ├→ androidApp
+  └→ PocketLabShared framework → iosApp
+```
+
+完整拆分过程与 `api` / framework `export` 的区别见[实验 14](../14-kmp-modularization/README.md)。
+
 ## 运行
 
 在本目录执行：
 
 ```shell
-./gradlew :shared:jvmTest
-./gradlew :shared:testAndroidHostTest
-./gradlew :shared:iosX64Test
+./gradlew :domain:jvmTest :shared:jvmTest
+./gradlew :domain:testAndroidHostTest :shared:testAndroidHostTest
+./gradlew :domain:iosX64Test :shared:iosX64Test
 ```
 
 一次运行并汇总全部目标：
 
 ```shell
-./gradlew :shared:allTests
+./gradlew :domain:allTests :shared:allTests
+```
+
+验证模块依赖和 Apple 导出边界：
+
+```shell
+./scripts/verify-module-boundaries.sh
 ```
 
 任务名以实际 Gradle 输出为准。可以用下面的命令观察全部测试任务：
 
 ```shell
+./gradlew :domain:tasks --group verification
 ./gradlew :shared:tasks --group verification
 ```
 
@@ -75,16 +94,15 @@ commonMain
 最终验证命令：
 
 ```shell
-./gradlew :shared:allTests
+./gradlew :domain:allTests :shared:allTests
 ```
 
 输出为 `BUILD SUCCESSFUL`。机器上的全局 Gradle 缓存不在工作区，自动验证时使用了显式的 `--gradle-user-home`；普通本地开发直接使用上面的命令即可。
 
 iOS 第一次运行有两个容易误判的阶段：先下载 Kotlin/Native 的 LLVM 等依赖，然后冷启动 Simulator。此次测试进程在 `dyld` 装载阶段等待约 3 分钟，但测试代码本身仅执行约 14 ms。报告位于：
 
-- `shared/build/reports/tests/jvmTest/index.html`
-- `shared/build/reports/tests/testAndroidHostTest/index.html`
-- `shared/build/reports/tests/iosX64Test/index.html`
+- `domain/build/reports/tests/{jvmTest,testAndroidHostTest,iosX64Test}/index.html`
+- `shared/build/reports/tests/{jvmTest,testAndroidHostTest,iosX64Test}/index.html`
 
 当前 Kotlin 2.4.21 会提示 macOS x64 Native host 已弃用。这不影响本次结果，但意味着后续长期开发应迁移到 Apple Silicon；不要用隐藏警告的配置假装风险不存在。
 

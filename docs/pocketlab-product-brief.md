@@ -48,6 +48,8 @@ PocketLab 是一个离线优先的个人实验记录器：把“我猜……”�
 - fake 位于 `commonTest`，不进入生产代码。
 - 同一组测试在 JVM、Android Host 与 iOS Simulator 通过。
 - Apple 专用互操作行为在 iOS Native 测试中验证，Swift 包装通过 Swift 6 严格并发 type-check。
+- 领域规则、模型、端口、用例与状态机由独立 `:domain` module 拥有，禁止依赖 Ktor、SQLDelight、平台 API 或 `:shared`。
+- Android/Kotlin consumer 可通过 shared 的 `api` dependency 使用 domain；Apple framework 只链接、不导出 domain API。
 - Android 与 iOS 宿主工程都能编译、最终链接并在模拟器启动；平台 ViewModel 不复制刷新与合并规则。
 - 共同测试在 JVM、Android Host 与 iOS Native 分别执行；平台 UI 由 Compose semantics 与 XCTest UI smoke 补齐。
 
@@ -139,13 +141,14 @@ PocketLab 按责任和风险组织测试，而不追求固定的单元/集成/UI
 → Android ViewModel / Compose → SwiftUI XCTest smoke
 ```
 
-- 38 个 `commonTest` 分别在 JVM、Android Host 与 iOS x64 执行；
+- 38 个共同场景按所有权分布在 `domain/commonTest` 与 `shared/commonTest`，分别在 JVM、Android Host 与 iOS x64 执行；
+- domain 每个目标 18 条；shared 在 JVM/Android Host/iOS x64 分别为 21/21/29，聚合仍为 39/39/47；
 - 共同集成测试使用真实 Refresh UseCase、SQLDelight Repository、transaction 与 Flow，外部 remote 保持确定性；
 - iOS 专用测试覆盖 callback、refresh、取消、异常与资源关闭；
 - Android Compose 测试只验证 state 渲染和 intent 转发，不复制共同业务分支；
-- iOS UI 测试使用唯一数据库冷启动真实 App，并验证首次刷新与幂等刷新；
+- iOS UI 测试使用唯一数据库冷启动真实 App，并验证首次刷新与幂等刷新；上一完整基线为 1/1，本轮因 Xcode 26.5 缺少匹配 runtime 未重新执行；
 - Native 专用测试用弱引用证明纯 Kotlin 强引用环可被 tracing GC 回收；共同并发测试让两个 dispatcher 通过 `Mutex` 安全修改同一对象；
-- 当前共有 54 个不同测试场景、130/130 次目标执行，两种计数不得混用；
+- 仓库共有 54 个不同测试场景、130 次目标执行；本轮可运行矩阵为 129/129，剩余 1 条 iOS UI 等待匹配 runtime，两种计数与验证时间不得混用；
 - 异步测试使用虚拟时间、Compose 同步或条件等待，不使用固定 sleep。
 
 ## 当前 Native runtime 边界
@@ -200,4 +203,23 @@ remote: Kotlin source → Release XCFramework → ZIP/checksum → SwiftPM consu
 - CocoaPods 保留给 Kotlin 必须消费 Pod 或团队已有强 Pod 基础设施的场景，不与 direct integration 同时接管当前 framework；
 - 生成 XCFramework、ZIP、checksum 与临时 Swift package 留在 ignored `build/`，源码 Git 只保存配置、模板与门禁；
 - Intel host 只运行 `iosX64Test`；Apple Silicon CI 必须补 `iosSimulatorArm64Test`，不把交叉编译冒充运行时覆盖。
+
+## 当前模块边界
+
+PocketLab 使用一个内部领域模块和一个 Apple umbrella/composition 模块：
+
+```text
+domain: rules + models + ports + use cases + state machines
+  ↓
+shared: Ktor + SQLDelight + platform adapters + Apple facade
+  ├→ Android App
+  └→ one PocketLabShared framework → SwiftUI App
+```
+
+- `domain` 声明 JVM、Android 与三种 iOS targets，但不生成 framework；
+- `shared` 使用 `api(project(":domain"))` 保持 Kotlin consumer 的传递可见性；
+- Apple framework 不 `export` domain，也不启用 `transitiveExport`；
+- module gate 禁止 domain 导入平台、Ktor、SQLDelight 或反向依赖 shared；
+- module 拆分后 Apple header 从 2,267 行降到 888 行，领域规则、端口与用例不再导出；
+- SQLDelight 生成 API 仍与 facade 同处 shared，是未来 infrastructure/apple-api 再拆分的候选，而非已完成项。
 

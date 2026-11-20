@@ -1,4 +1,4 @@
 package dev.kmpjourney.shared
 
-actual fun platformName(): String = "JVM"
+internal actual fun platformName(): String = "JVM"
 

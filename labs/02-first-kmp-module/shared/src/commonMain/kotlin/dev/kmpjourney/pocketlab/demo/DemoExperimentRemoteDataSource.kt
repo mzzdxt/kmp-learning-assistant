@@ -1,11 +1,15 @@
+@file:OptIn(kotlin.experimental.ExperimentalObjCRefinement::class)
+
 package dev.kmpjourney.pocketlab.demo
 
 import dev.kmpjourney.pocketlab.network.ExperimentRemoteDataSource
 import dev.kmpjourney.pocketlab.network.RemoteExperiment
 import dev.kmpjourney.pocketlab.network.RemoteExperimentsResult
 import kotlinx.coroutines.delay
+import kotlin.native.HiddenFromObjC
 
 /** Deterministic sample data for the two native UI shells; never a production backend. */
+@HiddenFromObjC
 class DemoExperimentRemoteDataSource(
     private val latencyMilliseconds: Long = 300,
 ) : ExperimentRemoteDataSource {

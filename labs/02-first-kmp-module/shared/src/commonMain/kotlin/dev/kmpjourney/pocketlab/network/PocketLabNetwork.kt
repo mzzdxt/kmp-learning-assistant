@@ -16,7 +16,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
-class PocketLabNetwork internal constructor(
+internal class PocketLabNetwork(
     private val client: HttpClient,
     baseUrl: String,
 ) : ExperimentRemoteDataSource {
@@ -52,7 +52,7 @@ class PocketLabNetwork internal constructor(
     }
 }
 
-fun createPlatformPocketLabNetwork(baseUrl: String): PocketLabNetwork =
+internal fun createPlatformPocketLabNetwork(baseUrl: String): PocketLabNetwork =
     PocketLabNetwork(createPlatformHttpClient(), baseUrl)
 
 internal expect fun createPlatformHttpClient(): HttpClient

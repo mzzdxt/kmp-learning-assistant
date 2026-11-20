@@ -8,7 +8,7 @@ plugins {
     id("com.android.kotlin.multiplatform.library")
 }
 
-val pocketLabVersion = "0.13.0"
+val pocketLabVersion = "0.14.0"
 version = pocketLabVersion
 
 kotlin {
@@ -43,16 +43,17 @@ kotlin {
             isStatic = true
             binaryOption("bundleId", "dev.kmpjourney.pocketlab.shared")
             binaryOption("bundleShortVersionString", pocketLabVersion)
-            binaryOption("bundleVersion", "13")
+            binaryOption("bundleVersion", "14")
             appleBundle.add(this)
         }
     }
 
     sourceSets {
         commonMain.dependencies {
-            // StateFlow is part of PocketLab's public common API, so consumers
-            // need the coroutines types on their compile classpath.
-            api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
+            // Kotlin consumers see domain transitively. Apple consumers do not:
+            // the framework deliberately links domain without exporting its API.
+            api(project(":domain"))
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
             implementation("io.ktor:ktor-client-core:3.6.1")
             implementation("io.ktor:ktor-client-content-negotiation:3.6.1")
             implementation("io.ktor:ktor-serialization-kotlinx-json:3.6.1")

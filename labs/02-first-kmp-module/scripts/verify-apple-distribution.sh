@@ -16,7 +16,7 @@ SIMULATOR_FRAMEWORK="$XCFRAMEWORK/ios-arm64_x86_64-simulator/PocketLabShared.fra
 PACKAGE_TEMPLATE="$PROJECT_ROOT/distribution/apple/Package.swift"
 STAGING_ROOT="$PROJECT_ROOT/build/apple-distribution"
 PACKAGE_ROOT="$STAGING_ROOT/SwiftPackage"
-ARCHIVE="$STAGING_ROOT/PocketLabShared-0.13.0.xcframework.zip"
+ARCHIVE="$STAGING_ROOT/PocketLabShared-0.14.0.xcframework.zip"
 
 cd "$PROJECT_ROOT"
 
@@ -42,9 +42,9 @@ for FRAMEWORK in "$DEVICE_FRAMEWORK" "$SIMULATOR_FRAMEWORK"; do
     [ "$(plutil -extract CFBundleIdentifier raw "$PLIST")" = \
         "dev.kmpjourney.pocketlab.shared" ] || fail "unexpected bundle identifier"
     [ "$(plutil -extract CFBundleShortVersionString raw "$PLIST")" = \
-        "0.13.0" ] || fail "unexpected marketing version"
+        "0.14.0" ] || fail "unexpected marketing version"
     [ "$(plutil -extract CFBundleVersion raw "$PLIST")" = \
-        "13" ] || fail "unexpected bundle version"
+        "14" ] || fail "unexpected bundle version"
     file "$FRAMEWORK/PocketLabShared" | rg -q 'archive' || \
         fail "framework binary is not static"
 done
@@ -52,7 +52,9 @@ done
 HEADER="$SIMULATOR_FRAMEWORK/Headers/PocketLabShared.h"
 rg -q 'swift_name\("ExperimentListClient"\)' "$HEADER" || \
     fail "Swift-friendly API name is missing"
-if rg -q 'swift_name\("ExperimentRecord"\)|RefreshExperimentsResult|initWithLocalStore' "$HEADER"; then
+if rg -q \
+    'swift_name\("ExperimentRecord"\)|RefreshExperimentsResult|initWithLocalStore|StudyStreakPolicy|DraftValidator|SaveDraftUseCase|ExperimentRepository|RemoteExperimentsResult|DraftEditorStore' \
+    "$HEADER"; then
     fail "an internal Kotlin type leaked into the distributed header"
 fi
 

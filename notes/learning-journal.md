@@ -516,6 +516,52 @@
 
 对应文章：[Framework、XCFramework、SPM 与 CocoaPods：你的 Kotlin 代码究竟怎么送到 iOS？](../articles/13-apple-framework-distribution.md)
 
+---
+
+## 2026-11-20：shared 能共享，不代表所有共享代码属于同一个模块
+
+### 我原来以为
+
+- source set 和 package 已经把领域、基础设施与平台代码分开，再建 Gradle module 只是整理目录。
+- `shared` 对 `domain` 使用 `api(project(...))` 后，domain API 会自然进入 Apple framework。
+- 有两个 KMP modules，就应该给 iOS 生成两个 frameworks。
+- 把 use case test 搬进 domain 即可，继续使用真实 SQLDelight 会更可靠。
+- 模块越多、header 越短，架构就越成熟。
+
+### 实验实际发生了
+
+- 新建 `:domain` 后，规则、模型、端口、用例与状态机能在不依赖 Ktor、SQLDelight 或平台 API 的前提下独立编译测试；package 名无需改变。
+- `shared` 使用 `api(project(":domain"))` 后，Android App 仍只依赖 shared 并能编译 domain 类型；Apple framework 没有 `export(project(":domain"))`，所以 Swift 看不到 domain declarations。
+- `domain` 声明三种 iOS targets 但不生成 framework；`shared` 继续作为唯一 umbrella，内部链接 domain KLIB。
+- `RefreshExperimentsUseCaseTest` 改用 `ExperimentLocalStore` 内存 fake；真实 SQLDelight repository 与端到端刷新仍在 shared tests 覆盖。
+- domain 在 JVM/Android Host/iOS x64 各通过 18 条；shared 分别通过 21/21/29，聚合仍为 39/39/47。
+- 仓库仍定义 54 个不同场景、130 次目标执行；本轮重跑 129/129，iOS UI 上一完整基线为 1/1，但 Xcode 26.5 缺少匹配 runtime，不能把 destination 发现失败写成通过。
+- Apple header 从 2,267 行降到 888 行，domain rule/use-case/port/state symbols 为 0，Apple facade 保持存在。
+- header 仍含 SQLDelight 生成声明，说明 infrastructure 仍与 framework producer 同 module；它成为有证据的后续候选，而不是被忽略。
+
+### 原因
+
+- source set 决定 target 复用，package 决定命名空间，Gradle module 才能执行依赖、编译和发布边界。
+- Gradle `api` 管理 Kotlin consumer classpath；Kotlin/Native `export` 单独管理 framework API。
+- 多个 Kotlin/Native frameworks 可能复制依赖、runtime、状态与类型；内部多模块通常由一个 umbrella 交付给 iOS。
+- 端口 fake 验证 use case orchestration，真实 repository/integration tests 验证技术接缝，两层证据不能互相冒充。
+- 模块有配置、任务、ABI、CI 和所有权成本；是否继续拆分必须由依赖方向、变更扩散与测量结果决定。
+
+### 对工程决策的影响
+
+- domain 禁止平台、Ktor、SQLDelight 和反向 shared 依赖，并由 `verify-module-boundaries.sh` 自动执行。
+- Kotlin consumer 与 Apple consumer 使用不同 API 契约：前者保留完整 domain，后者只消费 Apple facade。
+- Apple framework 只保留一个 umbrella；默认不 export domain，不启用 `transitiveExport`。
+- `StateFlow` 出现在 domain public API，因此 coroutines 是 domain 的 `api` dependency；依赖可见性由公开签名决定。
+- 模块迁移同时记录测试聚合、header allow/deny 和 consumer compile，避免只凭目录变化宣布成功。
+- 只有 SQLDelight header 泄漏、build profile 或团队所有权证明收益时，再拆 infrastructure/apple-api。
+
+对应决策记录：[ADR-0012](../docs/adr/0012-domain-module-and-apple-umbrella.md)
+
+对应实验：[实验 14](../labs/14-kmp-modularization/README.md)
+
+对应文章：[KMP 模块化：共享多少，由谁决定？](../articles/14-kmp-modularization.md)
+
 
 
 

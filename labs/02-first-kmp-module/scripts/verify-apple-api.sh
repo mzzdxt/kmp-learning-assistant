@@ -46,6 +46,9 @@ expect_header 'swift_private' 'raw callbacks refined out of autocomplete'
 reject_header 'swift_name\("ExperimentRecord"\)' 'shared database record'
 reject_header 'RefreshExperimentsResult' 'shared sealed result hierarchy'
 reject_header 'initWithLocalStore' 'bridge construction dependencies'
+reject_header 'StudyStreakPolicy|DraftValidator|SaveDraftUseCase' 'domain rules and use cases'
+reject_header 'ExperimentRepository|ExperimentLocalStore' 'domain ports'
+reject_header 'RemoteExperimentsResult|DraftEditorStore' 'domain result and state types'
 
 xcrun --sdk iphonesimulator swiftc \
     -typecheck \
