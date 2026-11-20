@@ -19,9 +19,14 @@ class AndroidPocketLabGraph(application: Application) {
         name = "pocketlab-demo.db",
     )
 
-    val repository = SqlDelightExperimentRepository(databaseHandle.database)
-    val refreshExperiments = createObservedRefreshExperimentsUseCase(
+    private val repository = SqlDelightExperimentRepository(databaseHandle.database)
+    private val refreshExperiments = createObservedRefreshExperimentsUseCase(
         remote = DemoExperimentRemoteDataSource(),
         local = repository,
+    )
+
+    internal val experimentListGateway: ExperimentListGateway = KmpExperimentListGateway(
+        localStore = repository,
+        refreshExperiments = refreshExperiments,
     )
 }

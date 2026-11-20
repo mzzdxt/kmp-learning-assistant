@@ -3,11 +3,6 @@ package dev.kmpjourney.pocketlab.android
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import dev.kmpjourney.pocketlab.ExperimentLocalStore
-import dev.kmpjourney.pocketlab.ExperimentRecord
-import dev.kmpjourney.pocketlab.sync.RefreshExperimentsResult
-import dev.kmpjourney.pocketlab.sync.RefreshExperimentsUseCase
-import dev.kmpjourney.pocketlab.sync.RefreshFailureReason
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,26 +12,25 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class ExperimentListUiState(
-    val experiments: List<ExperimentRecord> = emptyList(),
+    val experiments: List<ExperimentListItem> = emptyList(),
     val isRefreshing: Boolean = false,
     val notice: RefreshNotice? = null,
 )
 
 sealed interface RefreshNotice {
     data class Applied(val changedCount: Int) : RefreshNotice
-    data class Failed(val reason: RefreshFailureReason) : RefreshNotice
+    data class Failed(val reason: ExperimentRefreshFailure) : RefreshNotice
     data object Unexpected : RefreshNotice
 }
 
 class ExperimentListViewModel internal constructor(
-    private val localStore: ExperimentLocalStore,
-    private val refreshExperiments: RefreshExperimentsUseCase,
+    private val gateway: ExperimentListGateway,
     autoRefresh: Boolean = true,
 ) : ViewModel() {
     private val refreshPhase = MutableStateFlow<RefreshPhase>(RefreshPhase.Idle)
     private var refreshJob: Job? = null
 
-    val uiState = combine(localStore.observeAll(), refreshPhase) { experiments, phase ->
+    val uiState = combine(gateway.observeExperiments(), refreshPhase) { experiments, phase ->
         ExperimentListUiState(
             experiments = experiments,
             isRefreshing = phase == RefreshPhase.Refreshing,
@@ -64,11 +58,11 @@ class ExperimentListViewModel internal constructor(
         refreshJob = viewModelScope.launch {
             refreshPhase.value = RefreshPhase.Refreshing
             refreshPhase.value = try {
-                when (val result = refreshExperiments.execute()) {
-                    is RefreshExperimentsResult.Applied ->
+                when (val result = gateway.refresh()) {
+                    is ExperimentRefreshResult.Applied ->
                         RefreshPhase.Applied(result.changedCount)
 
-                    is RefreshExperimentsResult.Failed ->
+                    is ExperimentRefreshResult.Failed ->
                         RefreshPhase.Failed(result.reason)
                 }
             } catch (cancellation: CancellationException) {
@@ -83,7 +77,7 @@ class ExperimentListViewModel internal constructor(
         data object Idle : RefreshPhase
         data object Refreshing : RefreshPhase
         data class Applied(val changedCount: Int) : RefreshPhase
-        data class Failed(val reason: RefreshFailureReason) : RefreshPhase
+        data class Failed(val reason: ExperimentRefreshFailure) : RefreshPhase
         data object Unexpected : RefreshPhase
     }
 
@@ -94,8 +88,7 @@ class ExperimentListViewModel internal constructor(
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(ExperimentListViewModel::class.java))
             return ExperimentListViewModel(
-                localStore = graph.repository,
-                refreshExperiments = graph.refreshExperiments,
+                gateway = graph.experimentListGateway,
             ) as T
         }
     }

@@ -11,6 +11,7 @@
 		0EBE6951ACC1F77FD8879A75 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 63BEEF5D6AA4CE5E6C99AEA0 /* Foundation.framework */; };
 		27650B61C1BB82A2D7581E93 /* PocketLabIosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07B2BACE7ABF80771F7D554B /* PocketLabIosApp.swift */; };
 		A9E518354F070C9C91BD0BD2 /* ExperimentListAsyncSequence.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE25D89688E1E5BB405FF66F /* ExperimentListAsyncSequence.swift */; };
+		C0A17A000000000000000001 /* ExperimentListGateway.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A17B000000000000000001 /* ExperimentListGateway.swift */; };
 		CF64EA57CD00EF806975B7D9 /* PocketLabIosUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9813F1C14C0C46837BA5779A /* PocketLabIosUITests.swift */; };
 		D717FAEFC5BCBB93E98B14BF /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 63BEEF5D6AA4CE5E6C99AEA0 /* Foundation.framework */; };
 		F42A8C7FFAA32BACE5D66185 /* ExperimentListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52973B109FCC2293725F5D37 /* ExperimentListViewModel.swift */; };
@@ -33,6 +34,7 @@
 		63BEEF5D6AA4CE5E6C99AEA0 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		9813F1C14C0C46837BA5779A /* PocketLabIosUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PocketLabIosUITests.swift; sourceTree = "<group>"; };
 		AEB9EE40D0D518002EBAED9E /* ExperimentListScreen.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExperimentListScreen.swift; sourceTree = "<group>"; };
+		C0A17B000000000000000001 /* ExperimentListGateway.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExperimentListGateway.swift; sourceTree = "<group>"; };
 		E46A195AFD948B68F178AA77 /* PocketLabIosUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PocketLabIosUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EE25D89688E1E5BB405FF66F /* ExperimentListAsyncSequence.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExperimentListAsyncSequence.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -61,6 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				EE25D89688E1E5BB405FF66F /* ExperimentListAsyncSequence.swift */,
+				C0A17B000000000000000001 /* ExperimentListGateway.swift */,
 				AEB9EE40D0D518002EBAED9E /* ExperimentListScreen.swift */,
 				52973B109FCC2293725F5D37 /* ExperimentListViewModel.swift */,
 				07B2BACE7ABF80771F7D554B /* PocketLabIosApp.swift */,
@@ -233,6 +236,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A9E518354F070C9C91BD0BD2 /* ExperimentListAsyncSequence.swift in Sources */,
+				C0A17A000000000000000001 /* ExperimentListGateway.swift in Sources */,
 				0281B56854B77E2550378C3F /* ExperimentListScreen.swift in Sources */,
 				F42A8C7FFAA32BACE5D66185 /* ExperimentListViewModel.swift in Sources */,
 				27650B61C1BB82A2D7581E93 /* PocketLabIosApp.swift in Sources */,
@@ -257,7 +261,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -270,7 +274,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 0.16.0;
+				MARKETING_VERSION = 0.17.0;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
@@ -308,7 +312,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
-				CURRENT_PROJECT_VERSION = 16;
+				CURRENT_PROJECT_VERSION = 17;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -321,7 +325,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 0.16.0;
+				MARKETING_VERSION = 0.17.0;
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_LDFLAGS = (
 					"$(inherited)",

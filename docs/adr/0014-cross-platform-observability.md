@@ -119,7 +119,7 @@ Android 的 Perfetto/系统 trace、Android vitals 与 ANR 分析，Apple 的 In
 - schema 使用 monotonic clock 且没有禁止字段；
 - minified Android Release APK 和 mapping 均存在；
 - R8 版本、应用类、domain/shared source-line metadata 可在 mapping 中找到；
-- Android 版本为 `0.16.0 (16)`，并输出 APK/mapping SHA-256 与 `pg_map_id`；
+- Android 版本与当前发布身份一致，并输出 APK/mapping SHA-256 与 `pg_map_id`；
 - Native binary/dSYM UUID 匹配，`atos` 能恢复 Kotlin 函数名；
 - Xcode Release 保留 dSYM 设置；
 - 诊断实现没有泄露进 Apple header。

@@ -60,8 +60,8 @@ target.build_configurations.each do |configuration|
   settings["ONLY_ACTIVE_ARCH"] = configuration.name == "Debug" ? "YES" : "NO"
   settings["DEBUG_INFORMATION_FORMAT"] =
     configuration.name == "Debug" ? "dwarf" : "dwarf-with-dsym"
-  settings["CURRENT_PROJECT_VERSION"] = "16"
-  settings["MARKETING_VERSION"] = "0.16.0"
+  settings["CURRENT_PROJECT_VERSION"] = "17"
+  settings["MARKETING_VERSION"] = "0.17.0"
 end
 
 ui_test_target.build_configurations.each do |configuration|

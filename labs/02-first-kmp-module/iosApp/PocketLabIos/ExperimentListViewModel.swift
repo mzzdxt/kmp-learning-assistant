@@ -1,6 +1,5 @@
 import Combine
 import Foundation
-@preconcurrency import PocketLabShared
 
 @MainActor
 final class ExperimentListViewModel: ObservableObject {
@@ -8,16 +7,16 @@ final class ExperimentListViewModel: ObservableObject {
     @Published private(set) var isRefreshing = false
     @Published private(set) var notice: String?
 
-    private let feature: PocketLabFeature
+    private let gateway: any ExperimentListGateway
     private var manualRefreshTask: Task<Void, Never>?
 
-    init(feature: PocketLabFeature) {
-        self.feature = feature
+    init(gateway: any ExperimentListGateway) {
+        self.gateway = gateway
     }
 
     func observe() async {
         do {
-            for try await records in feature.experimentList.experiments() {
+            for try await records in gateway.experiments() {
                 experiments = records
             }
         } catch is CancellationError {
@@ -33,7 +32,7 @@ final class ExperimentListViewModel: ObservableObject {
         defer { isRefreshing = false }
 
         do {
-            let result = try await feature.experimentList.refreshOnce()
+            let result = try await gateway.refresh()
             notice = refreshMessage(for: result)
         } catch is CancellationError {
             // Navigation and view disappearance are control flow, not user-facing errors.
@@ -84,6 +83,8 @@ final class ExperimentListViewModel: ObservableObject {
 
     deinit {
         manualRefreshTask?.cancel()
-        feature.close()
+        Task { @MainActor [gateway] in
+            gateway.close()
+        }
     }
 }

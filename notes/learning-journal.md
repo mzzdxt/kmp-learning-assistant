@@ -661,6 +661,57 @@
 
 对应文章：[KMP 出问题时，谁来作证：从一条 628 ms 日志到可符号化崩溃](../articles/16-cross-platform-observability.md)
 
+---
+
+## 2026-11-20：渐进迁移不是同时跑两套，而是一次只切一条可回滚路径
+
+### 我原来以为
+
+- 创建 shared module 并逐层移动 model/repository，就是渐进迁移。
+- Android 和 iOS 直接使用 KMP 类型能减少 mapping，应该更简单。
+- 新旧实现同时 refresh、同时写数据库，最容易比较结果。
+- 有一个远端 Boolean flag，就拥有一键回滚。
+- flag 到 100% 后，旧实现可以永久保留以防万一。
+- Android 和 Swift 应该暴露形状完全一致的跨平台接口。
+
+### 实验实际发生了
+
+- 选择 experiment list 作为纵向切片，完整覆盖观察、刷新、稳定失败、网络与数据库，而没有同时迁移导航、编辑和 UI。
+- Android 新建 host-owned `ExperimentListGateway` 与 host values；ViewModel/Compose 不再依赖 `ExperimentRecord`、port、use case 或 domain failure enum。
+- Swift 新建 `ExperimentListGateway` protocol；ViewModel/SwiftUI 不再 import `PocketLabShared` 或持有 `PocketLabFeature`。
+- 两端 KMP adapter 只负责 value/result/cancellation 翻译，composition root 成为唯一 production selection point。
+- Android 的 legacy fixture 用零 KMP 类型驱动同一个 ViewModel；Swift compile-only fixture 同样构造同一个 ViewModel，证明替换结构。
+- production adapter 对 `save`、`mergeServerSnapshot` 与第二套写入 API 的扫描为 0；一个 refresh 仍只有一个 SQLDelight transaction。
+- Swift 6 strict compile 捕获同步 deinit 直接调用 `@MainActor close()`；最终用显式 MainActor Task 保留资源关闭，而不是删除 close。
+- Android 新增 4 条 adapter tests，覆盖 record/status、success、failure/status 与 cancellation identity；Android unit 达到 6/6。
+- 0.17.0/build 17 的 minified Release 在 Pixel 2 API 34 模拟器冷启动成功，KMP gateway 路径 408 ms 完成刷新，接收 3 条、变更 0 条（本地快照已收敛）。
+- 仓库不同场景达到 69 个、目标执行 167 次；当前可运行 166/166，剩余仍是受 Xcode runtime 阻断的 iOS UI smoke。
+
+### 原因
+
+- 按层搬文件会让多个用户旅程长期半迁移；纵向切片能独立发布、观察和回滚。
+- host contract 表达现有 App 需求，adapter 隔离 KMP implementation graph；少量值复制换取变化边界。
+- write path shadow 会重复网络、transaction、retry 与用户副作用；没有 outbox/幂等/补偿设计时，双写是新的分布式一致性问题。
+- feature flag 只能切换 binary 中的代码路径，不能撤销已经写入的数据，也不能让旧 App 自动理解新 schema。
+- Android Flow/coroutine 与 Swift AsyncSequence/async 的自然接口不同，共享业务含义不要求共享平台语法。
+- 永久双轨会让每个需求继续支付两套实现、测试、监控和 on-call 成本。
+
+### 对工程决策的影响
+
+- KMP 类型只能进入平台 adapter 与 composition root；宿主 ViewModel/UI denylist 由 `verify-incremental-adoption.sh` 执行。
+- 生产实现选择必须在 process/session/feature-owner 等稳定作用域固定，不能每次 refresh 重新读取 flag。
+- parity 优先用于纯函数 corpus；read-only shadow 需受控；网络与写入路径保持单一 active implementation。
+- rollout 必须按 platform、version/build、cohort 分层，并预先定义进入、停止、回滚与观察窗口。
+- 代码回滚、配置回滚和数据降级分别设计；“关 flag”不再被写成完整回滚方案。
+- legacy、flag、cohort metric 与兼容 adapter 都有删除条件，100% rollout 后仍需观察窗口和清理 PR。
+- 同仓 iOS 开发继续 direct integration，跨仓分发继续 XCFramework + SwiftPM；集成方式由团队边界决定。
+
+对应决策记录：[ADR-0015](../docs/adr/0015-host-owned-seams-for-incremental-adoption.md)
+
+对应实验：[实验 17](../labs/17-incremental-adoption/README.md)
+
+对应文章：[别把现有 App 一夜搬进 commonMain：一条可回滚的 KMP 迁移路线](../articles/17-incremental-kmp-adoption.md)
+
 
 
 

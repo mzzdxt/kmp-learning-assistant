@@ -1,16 +1,5 @@
 package dev.kmpjourney.pocketlab.android
 
-import dev.kmpjourney.pocketlab.ExperimentLocalStore
-import dev.kmpjourney.pocketlab.ExperimentRecord
-import dev.kmpjourney.pocketlab.ExperimentSyncState
-import dev.kmpjourney.pocketlab.SavedExperiment
-import dev.kmpjourney.pocketlab.ServerExperimentSnapshot
-import dev.kmpjourney.pocketlab.network.ExperimentRemoteDataSource
-import dev.kmpjourney.pocketlab.network.RemoteExperiment
-import dev.kmpjourney.pocketlab.network.RemoteExperimentsResult
-import dev.kmpjourney.pocketlab.network.RemoteFailureReason
-import dev.kmpjourney.pocketlab.sync.RefreshExperimentsUseCase
-import dev.kmpjourney.pocketlab.sync.RefreshFailureReason
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -41,10 +30,12 @@ class ExperimentListViewModelTest {
     }
 
     @Test
-    fun initialRefreshPublishesDatabaseRowsAndSuccessNotice() = runTest(dispatcher) {
-        val local = FakeLocalStore()
-        val remote = remote(RemoteExperimentsResult.Success(listOf(remoteRecord())))
-        val viewModel = viewModel(local, remote)
+    fun legacyGatewayCanPowerTheHostViewModelBeforeCutover() = runTest(dispatcher) {
+        val gateway = LegacyExperimentListGateway(
+            refreshResult = ExperimentRefreshResult.Applied(changedCount = 1),
+            refreshedRecords = listOf(item("remote-1")),
+        )
+        val viewModel = ExperimentListViewModel(gateway)
 
         advanceUntilIdle()
 
@@ -54,79 +45,49 @@ class ExperimentListViewModelTest {
     }
 
     @Test
-    fun failedRefreshKeepsCachedRowsVisible() = runTest(dispatcher) {
-        val local = FakeLocalStore(listOf(record("cached")))
-        val remote = remote(
-            RemoteExperimentsResult.Failure(
-                reason = RemoteFailureReason.SERVER,
+    fun failedRefreshKeepsLegacyCachedRowsVisible() = runTest(dispatcher) {
+        val gateway = LegacyExperimentListGateway(
+            initialRecords = listOf(item("cached")),
+            refreshResult = ExperimentRefreshResult.Failed(
+                reason = ExperimentRefreshFailure.SERVER,
                 statusCode = 503,
             ),
         )
-        val viewModel = viewModel(local, remote)
+        val viewModel = ExperimentListViewModel(gateway)
 
         advanceUntilIdle()
 
         assertEquals(listOf("cached"), viewModel.uiState.value.experiments.map { it.id })
         assertEquals(
-            RefreshNotice.Failed(RefreshFailureReason.SERVER),
+            RefreshNotice.Failed(ExperimentRefreshFailure.SERVER),
             viewModel.uiState.value.notice,
         )
     }
 
-    private fun viewModel(
-        local: FakeLocalStore,
-        remote: ExperimentRemoteDataSource,
-    ) = ExperimentListViewModel(
-        localStore = local,
-        refreshExperiments = RefreshExperimentsUseCase(remote, local),
-    )
+    /** Simulates the pre-KMP implementation behind the Android-owned contract. */
+    private class LegacyExperimentListGateway(
+        initialRecords: List<ExperimentListItem> = emptyList(),
+        private val refreshResult: ExperimentRefreshResult,
+        private val refreshedRecords: List<ExperimentListItem> = initialRecords,
+    ) : ExperimentListGateway {
+        private val records = MutableStateFlow(initialRecords)
 
-    private fun remote(result: RemoteExperimentsResult) = object : ExperimentRemoteDataSource {
-        override suspend fun fetchExperiments(): RemoteExperimentsResult = result
+        override fun observeExperiments(): Flow<List<ExperimentListItem>> = records
+
+        override suspend fun refresh(): ExperimentRefreshResult {
+            if (refreshResult is ExperimentRefreshResult.Applied) {
+                records.value = refreshedRecords
+            }
+            return refreshResult
+        }
     }
 
-    private fun remoteRecord() = RemoteExperiment(
-        id = "remote-1",
-        title = "Remote",
-        hypothesis = "hypothesis",
-        notes = "notes",
-        updatedAtEpochMilliseconds = 20,
-    )
-
-    private fun record(id: String) = ExperimentRecord(
+    private fun item(id: String) = ExperimentListItem(
         id = id,
         title = id,
         hypothesis = "hypothesis",
         notes = "notes",
         updatedAtEpochMilliseconds = 10,
-        syncState = ExperimentSyncState.SYNCED,
+        syncStatus = ExperimentSyncStatus.SYNCED,
     )
-
-    private class FakeLocalStore(
-        initial: List<ExperimentRecord> = emptyList(),
-    ) : ExperimentLocalStore {
-        private val records = MutableStateFlow(initial)
-
-        override fun observeAll(): Flow<List<ExperimentRecord>> = records
-
-        override suspend fun save(experiment: SavedExperiment) = Unit
-
-        override suspend fun pendingUploads(): List<ExperimentRecord> = emptyList()
-
-        override suspend fun mergeServerSnapshot(
-            experiments: List<ServerExperimentSnapshot>,
-        ): Int {
-            records.value = experiments.map { experiment ->
-                ExperimentRecord(
-                    id = experiment.id,
-                    title = experiment.title,
-                    hypothesis = experiment.hypothesis,
-                    notes = experiment.notes,
-                    updatedAtEpochMilliseconds = experiment.updatedAtEpochMilliseconds,
-                    syncState = ExperimentSyncState.SYNCED,
-                )
-            }
-            return experiments.size
-        }
-    }
 }

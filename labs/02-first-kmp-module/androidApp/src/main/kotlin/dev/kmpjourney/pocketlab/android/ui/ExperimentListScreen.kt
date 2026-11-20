@@ -33,12 +33,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import dev.kmpjourney.pocketlab.ExperimentRecord
-import dev.kmpjourney.pocketlab.ExperimentSyncState
+import dev.kmpjourney.pocketlab.android.ExperimentListItem
 import dev.kmpjourney.pocketlab.android.ExperimentListUiState
+import dev.kmpjourney.pocketlab.android.ExperimentRefreshFailure
+import dev.kmpjourney.pocketlab.android.ExperimentSyncStatus
 import dev.kmpjourney.pocketlab.android.R
 import dev.kmpjourney.pocketlab.android.RefreshNotice
-import dev.kmpjourney.pocketlab.sync.RefreshFailureReason
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -167,7 +167,7 @@ private fun EmptyState(
 
 @Composable
 private fun ExperimentList(
-    experiments: List<ExperimentRecord>,
+    experiments: List<ExperimentListItem>,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -175,14 +175,14 @@ private fun ExperimentList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        items(experiments, key = ExperimentRecord::id) { experiment ->
+        items(experiments, key = ExperimentListItem::id) { experiment ->
             ExperimentCard(experiment)
         }
     }
 }
 
 @Composable
-private fun ExperimentCard(experiment: ExperimentRecord) {
+private fun ExperimentCard(experiment: ExperimentListItem) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -205,7 +205,7 @@ private fun ExperimentCard(experiment: ExperimentRecord) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                SyncBadge(experiment.syncState)
+                SyncBadge(experiment.syncStatus)
             }
             LabeledText(
                 label = stringResource(R.string.hypothesis_label),
@@ -246,8 +246,8 @@ private fun LabeledText(label: String, value: String) {
 }
 
 @Composable
-private fun SyncBadge(syncState: ExperimentSyncState) {
-    val pending = syncState == ExperimentSyncState.PENDING_UPLOAD
+private fun SyncBadge(syncStatus: ExperimentSyncStatus) {
+    val pending = syncStatus == ExperimentSyncStatus.PENDING_UPLOAD
     Surface(
         shape = RoundedCornerShape(50),
         color = if (pending) {
@@ -267,10 +267,10 @@ private fun SyncBadge(syncState: ExperimentSyncState) {
 }
 
 @StringRes
-private fun RefreshFailureReason.messageResource(): Int = when (this) {
-    RefreshFailureReason.UNAUTHORIZED -> R.string.refresh_unauthorized
-    RefreshFailureReason.SERVER -> R.string.refresh_server
-    RefreshFailureReason.UNEXPECTED_STATUS -> R.string.refresh_unexpected_status
-    RefreshFailureReason.MALFORMED_RESPONSE -> R.string.refresh_malformed
-    RefreshFailureReason.CONNECTION -> R.string.refresh_connection
+private fun ExperimentRefreshFailure.messageResource(): Int = when (this) {
+    ExperimentRefreshFailure.UNAUTHORIZED -> R.string.refresh_unauthorized
+    ExperimentRefreshFailure.SERVER -> R.string.refresh_server
+    ExperimentRefreshFailure.UNEXPECTED_STATUS -> R.string.refresh_unexpected_status
+    ExperimentRefreshFailure.MALFORMED_RESPONSE -> R.string.refresh_malformed
+    ExperimentRefreshFailure.CONNECTION -> R.string.refresh_connection
 }

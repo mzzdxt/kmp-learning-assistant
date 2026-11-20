@@ -39,7 +39,9 @@
 31. 完成 [实验 15：把“构建很慢”拆成可以验证的假设](labs/15-build-performance/README.md)。
 32. 阅读第十六篇文章：[KMP 出问题时，谁来作证：从一条 628 ms 日志到可符号化崩溃](articles/16-cross-platform-observability.md)。
 33. 完成 [实验 16：让跨平台故障留下同一条证据链](labs/16-observability/README.md)。
-34. 把疑问和实验结论写进 [学习日志](notes/learning-journal.md)，它们会成为后续文章最真实的素材。
+34. 阅读第十七篇文章：[别把现有 App 一夜搬进 commonMain：一条可回滚的 KMP 迁移路线](articles/17-incremental-kmp-adoption.md)。
+35. 完成 [实验 17：给现有 App 留一条可回滚的 KMP 迁移缝](labs/17-incremental-adoption/README.md)。
+36. 把疑问和实验结论写进 [学习日志](notes/learning-journal.md)，它们会成为后续文章最真实的素材。
 
 ## 仓库结构
 
@@ -81,6 +83,7 @@
 - [ADR-0012：领域模块独立，shared 作为唯一 Apple umbrella](docs/adr/0012-domain-module-and-apple-umbrella.md)
 - [ADR-0013：用分层基线和可验证能力治理构建性能](docs/adr/0013-evidence-based-build-performance.md)
 - [ADR-0014：用固定事件契约和构建身份定位跨平台故障](docs/adr/0014-cross-platform-observability.md)
+- [ADR-0015：用宿主契约和纵向切片渐进接入 KMP](docs/adr/0015-host-owned-seams-for-incremental-adoption.md)
 - [实验 03 与边界矩阵](labs/03-sharing-boundary/README.md)
 - [实验 04 与平台适配器](labs/04-expect-actual-socket/README.md)
 - [实验 05 与共享状态流](labs/05-first-shared-data-flow/README.md)
@@ -95,6 +98,7 @@
 - [实验 14 与 KMP 模块边界](labs/14-kmp-modularization/README.md)
 - [实验 15 与构建性能证据](labs/15-build-performance/README.md)
 - [实验 16 与跨平台诊断链](labs/16-observability/README.md)
+- [实验 17 与渐进迁移宿主契约](labs/17-incremental-adoption/README.md)
 - 领域代码：`labs/02-first-kmp-module/domain/src/commonMain/kotlin/dev/kmpjourney`
 - 基础设施与组合代码：`labs/02-first-kmp-module/shared/src/commonMain/kotlin/dev/kmpjourney/pocketlab`
 - Apple 互操作代码：`labs/02-first-kmp-module/shared/src/iosMain/kotlin/dev/kmpjourney/pocketlab/interop`
@@ -103,9 +107,9 @@
 - 领域测试：`labs/02-first-kmp-module/domain/src/commonTest/kotlin/dev/kmpjourney`
 - 基础设施与集成测试：`labs/02-first-kmp-module/shared/src/commonTest/kotlin/dev/kmpjourney/pocketlab`
 
-目前 `domain + shared` 在 JVM 与 Android Host 各聚合运行 50 条测试，iOS x64 聚合运行 58 条，共计 158/158；其中 domain 在三个目标各运行 23 条，shared 分别运行 27/27/35。Android ViewModel 2/2、Compose UI 2/2 也在本轮通过，当前可运行矩阵为 162/162。仓库定义 65 个不同场景、163 次目标执行；剩余 1 条是 iOS UI smoke，上一完整基线为 1/1，但当前 Xcode 26.5 未安装匹配的 iOS 26.5 runtime，旧 17.5–18.4 devices 被判为不可用，因此本轮没有把 destination 发现失败伪装成 UI 通过。
+目前 `domain + shared` 在 JVM 与 Android Host 各聚合运行 50 条测试，iOS x64 聚合运行 58 条，共计 158/158；其中 domain 在三个目标各运行 23 条，shared 分别运行 27/27/35。Android unit 6/6、Compose UI 2/2 也在本轮通过，当前可运行矩阵为 166/166。仓库定义 69 个不同场景、167 次目标执行；剩余 1 条是 iOS UI smoke，上一完整基线为 1/1，但当前 Xcode 26.5 未安装匹配的 iOS 26.5 runtime，旧 17.5–18.4 devices 被判为不可用，因此本轮没有把 destination 发现失败伪装成 UI 通过。
 
-49 个共同场景在两个 modules 中按所有权分组，并各自在三个目标重复执行；场景数与执行数分别表达行为覆盖和目标兼容证据。模块门禁会禁止 domain 导入平台、Ktor、SQLDelight 或反向依赖 shared，并证明 Kotlin consumer 通过 `api` 看见 domain、Apple framework 却不 export domain；Apple header 从 2,267 行降至 888 行。共同层集成测试继续穿过 demo remote、Refresh UseCase、真实 SQLDelight Repository、transaction 与 Flow；Native 专用实验覆盖 GC 引用环、Swift callback/cancellation、Apple snapshot 与稳定 failure report。Apple API gate 会检查 Swift names、隐藏实现类型与 `swift_private` callbacks，并用 Swift 6 complete strict concurrency 编译完整 SwiftUI source。Apple distribution gate 已构建 `iosArm64`、`iosSimulatorArm64`、`iosX64` Release frameworks，核对 static linkage、0.16.0/build 16 metadata、XCFramework slices、Swift binary package 与 ZIP checksum。构建性能门禁验证 Gradle build/configuration cache、Kotlin text/JSON build reports 与 benchmark harness；可观测性门禁验证固定隐私 allowlist schema、monotonic duration、R8 9.1.29 mapping、APK/mapping 构建身份、Native binary/dSYM UUID 和 Kotlin 函数恢复。分层基线仍把约 1 秒的 warm JVM feedback、19.8 秒的单架构 Native Debug forced build 和约 4 分 37 秒的三架构 Release distribution 分开解释。SQLDelight migration verifier、Android minified Release、Debug/Release Apple framework 和 Release XCFramework 继续完成构建。
+49 个共同场景在两个 modules 中按所有权分组，并各自在三个目标重复执行；场景数与执行数分别表达行为覆盖和目标兼容证据。模块门禁会禁止 domain 导入平台、Ktor、SQLDelight 或反向依赖 shared，并证明 Kotlin consumer 通过 `api` 看见 domain、Apple framework 却不 export domain；Apple header 从 2,267 行降至 888 行。共同层集成测试继续穿过 demo remote、Refresh UseCase、真实 SQLDelight Repository、transaction 与 Flow；Native 专用实验覆盖 GC 引用环、Swift callback/cancellation、Apple snapshot 与稳定 failure report。Apple API gate 会检查 Swift names、隐藏实现类型与 `swift_private` callbacks，并用 Swift 6 complete strict concurrency 编译完整 SwiftUI source。渐进迁移门禁确保 Android/Swift ViewModel 与 UI 只依赖宿主契约，KMP 类型收口于 adapter/composition root，legacy fixture 不进入生产且 runtime dual write 为 0。Apple distribution gate 构建 `iosArm64`、`iosSimulatorArm64`、`iosX64` Release frameworks，核对 static linkage、0.17.0/build 17 metadata、XCFramework slices、Swift binary package 与 ZIP checksum。构建性能门禁验证 Gradle build/configuration cache、Kotlin text/JSON build reports 与 benchmark harness；可观测性门禁验证固定隐私 allowlist schema、monotonic duration、R8 9.1.29 mapping、APK/mapping 构建身份、Native binary/dSYM UUID 和 Kotlin 函数恢复。分层基线仍把约 1 秒的 warm JVM feedback、19.8 秒的单架构 Native Debug forced build 和多架构 Release distribution 分开解释。SQLDelight migration verifier、Android minified Release、Debug/Release Apple framework 和 Release XCFramework 继续完成构建。
 
 ## 当前环境快照
 

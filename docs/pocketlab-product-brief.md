@@ -148,7 +148,8 @@ PocketLab 按责任和风险组织测试，而不追求固定的单元/集成/UI
 - Android Compose 测试只验证 state 渲染和 intent 转发，不复制共同业务分支；
 - iOS UI 测试使用唯一数据库冷启动真实 App，并验证首次刷新与幂等刷新；上一完整基线为 1/1，本轮因 Xcode 26.5 缺少匹配 runtime 未重新执行；
 - Native 专用测试用弱引用证明纯 Kotlin 强引用环可被 tracing GC 回收；共同并发测试让两个 dispatcher 通过 `Mutex` 安全修改同一对象；
-- 仓库共有 65 个不同测试场景、163 次目标执行；本轮可运行矩阵为 162/162，剩余 1 条 iOS UI 等待匹配 runtime，两种计数与验证时间不得混用；
+- Android unit 已从 2 条增加到 6 条，其中 4 条专门验证 KMP migration adapter 的映射与取消；
+- 仓库共有 69 个不同测试场景、167 次目标执行；本轮可运行矩阵为 166/166，剩余 1 条 iOS UI 等待匹配 runtime，两种计数与验证时间不得混用；
 - 异步测试使用虚拟时间、Compose 同步或条件等待，不使用固定 sleep。
 
 ## 当前 Native runtime 边界
@@ -255,8 +256,27 @@ typed refresh lifecycle
 - `:domain` 只拥有生命周期端口，`:shared` 定义 schema 与平台 writer，日志后端失败不能改变产品行为；
 - schema 不提供任意 message/attributes map，不允许标题、笔记、URL、数据库路径、token、异常 message 或原始响应；
 - duration 使用 `TimeSource.Monotonic`，单次 628 ms 样本只作为现场证据，不作为性能预算；
-- Android `0.16.0 (16)` Release 开启 R8 minify/resource shrink，并固定 Kotlin 2.4 兼容的 R8 9.1.29；每个发布物需保存匹配 APK/AAB、mapping、SHA-256 与 `pg_map_id`；
+- Android `0.17.0 (17)` Release 开启 R8 minify/resource shrink，并固定 Kotlin 2.4 兼容的 R8 9.1.29；每个发布物需保存匹配 APK/AAB、mapping、SHA-256 与 `pg_map_id`；
 - Apple Release 配置为 `DWARF with dSYM`；binary 与 dSYM 必须 UUID 匹配，最终 App archive 由 Xcode 发布流水线保存；
 - 当前门禁已用 `iosX64` test executable/dSYM 和 `atos` 恢复 Kotlin 函数名，但最终 SwiftUI App archive 仍受 Xcode 26.5 runtime 缺失阻断；
 - 日志不替代 Perfetto/Instruments、Android ANR/vitals、Apple MetricKit 或版本化性能指标。
+
+## 当前渐进迁移边界
+
+PocketLab 的实验列表以宿主拥有的契约接入 KMP：
+
+```text
+Android Compose / ViewModel → Android ExperimentListGateway ─┐
+                                                             ├→ KMP adapters → one shared data path
+SwiftUI / ViewModel         → Swift ExperimentListGateway ───┘
+```
+
+- Android/Swift ViewModel 与 UI 不再引用 KMP record、port、use case、framework facade 或 exported report；
+- 两端各自使用符合本地语言的 host values/protocol，不强迫 Flow 与 AsyncSequence 使用相同接口形状；
+- `KmpExperimentListGateway` 是唯一生产翻译层，composition root 是唯一 implementation selection point；
+- legacy implementation 只作为 Android test 与 Swift compile-only fixture，证明宿主可替换；当前仓库不虚构第二套生产数据库；
+- adapter 只映射值并委托一次 refresh，不调用第二次 `save`/`merge`，任一用户操作只有一个 data writer；
+- Swift 6 strict concurrency 捕获并修复了 `@MainActor close()` 与同步 deinit 的隔离冲突；
+- 0.17.0 minified Android Release 已通过真实启动和刷新 smoke；远端 cohort/flag、schema 降级和 iOS runtime rollout 尚未实现；
+- migration flag 若引入，必须有 owner、稳定选择作用域、过期日期和 legacy 删除条件，不能永久双轨。
 

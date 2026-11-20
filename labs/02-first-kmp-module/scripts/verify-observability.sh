@@ -33,10 +33,10 @@ DIAGNOSTICS_SOURCE="$PROJECT_ROOT/shared/src/commonMain/kotlin/dev/kmpjourney/po
 
 [ -s "$RELEASE_APK" ] || fail 'minified Android Release APK is missing'
 [ -s "$MAPPING" ] || fail 'R8 mapping.txt is missing'
-rg -q 'versionCode = 16' "$ANDROID_BUILD" || \
-    fail 'Android Release build number is not 16'
-rg -q 'versionName = "0\.16\.0"' "$ANDROID_BUILD" || \
-    fail 'Android Release version is not 0.16.0'
+rg -q 'versionCode = 17' "$ANDROID_BUILD" || \
+    fail 'Android Release build number is not 17'
+rg -q 'versionName = "0\.17\.0"' "$ANDROID_BUILD" || \
+    fail 'Android Release version is not 0.17.0'
 rg -q '^# compiler_version: 9\.1\.29$' "$MAPPING" || \
     fail 'Android Release did not use the Kotlin 2.4-compatible R8 version'
 rg -q 'ExperimentListViewModel ->' "$MAPPING" || \
@@ -98,7 +98,7 @@ fi
 
 echo "Observability contract passed."
 echo "Structured refresh schema: privacy allowlist + monotonic duration"
-echo "Android Release: 0.16.0 (16), R8 9.1.29, pg_map_id=$PG_MAP_ID"
+echo "Android Release: 0.17.0 (17), R8 9.1.29, pg_map_id=$PG_MAP_ID"
 echo "Android APK SHA-256: $APK_SHA256"
 echo "Android mapping SHA-256: $MAPPING_SHA256"
 echo "Kotlin/Native UUID: $BINARY_UUID"

@@ -90,7 +90,7 @@
 
 ### 第四辑：技术负责人视角
 
-17. 在现有 App 中渐进引入 KMP
+17. 别把现有 App 一夜搬进 commonMain：一条可回滚的 KMP 迁移路线
 18. KMP、Flutter、React Native 与纯原生：别只比较代码复用率
 19. Compose Multiplatform 要不要上？一份决策清单
 20. KMP 上生产：团队协作、版本治理与回滚策略

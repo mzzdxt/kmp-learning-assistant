@@ -5,9 +5,9 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import dev.kmpjourney.pocketlab.ExperimentRecord
-import dev.kmpjourney.pocketlab.ExperimentSyncState
+import dev.kmpjourney.pocketlab.android.ExperimentListItem
 import dev.kmpjourney.pocketlab.android.ExperimentListUiState
+import dev.kmpjourney.pocketlab.android.ExperimentSyncStatus
 import dev.kmpjourney.pocketlab.android.RefreshNotice
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -59,12 +59,12 @@ class ExperimentListScreenTest {
         }
     }
 
-    private fun experiment() = ExperimentRecord(
+    private fun experiment() = ExperimentListItem(
         id = "sleep-phone-outside-bedroom",
         title = "把手机留在客厅",
         hypothesis = "睡前把手机放在客厅，会让我平均提前 20 分钟入睡。",
         notes = "连续观察七天，并记录上床时间与实际入睡时间。",
         updatedAtEpochMilliseconds = 1_794_931_200_000,
-        syncState = ExperimentSyncState.SYNCED,
+        syncStatus = ExperimentSyncStatus.SYNCED,
     )
 }

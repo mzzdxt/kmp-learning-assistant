@@ -70,6 +70,14 @@ shared: Ktor + SQLDelight + platform adapters + Apple facade
 
 门禁会输出当前 Android APK/mapping SHA-256、`pg_map_id` 与 Native UUID。完整故障分类、隐私边界和符号化实验见[实验 16](../16-observability/README.md)。
 
+验证 Android/Swift 宿主契约、KMP adapter 与单一写入权威：
+
+```shell
+./scripts/verify-incremental-adoption.sh
+```
+
+门禁会用 Android legacy fixture 与 Swift compile-only fixture 证明同一 ViewModel 可切换实现，同时拒绝 KMP 类型扩散到宿主 UI 和 production dual write。完整迁移方法见[实验 17](../17-incremental-adoption/README.md)。
+
 按场景测量配置、开发任务、Native no-op 与 clean/cache restore：
 
 ```shell

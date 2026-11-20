@@ -57,6 +57,7 @@ xcrun --sdk iphonesimulator swiftc \
     -target x86_64-apple-ios17.0-simulator \
     -F "$FRAMEWORK_DIR" \
     iosApp/PocketLabIos/ExperimentListAsyncSequence.swift \
+    iosApp/PocketLabIos/ExperimentListGateway.swift \
     iosApp/PocketLabIos/ExperimentListScreen.swift \
     iosApp/PocketLabIos/ExperimentListViewModel.swift \
     iosApp/PocketLabIos/PocketLabIosApp.swift
