@@ -817,6 +817,16 @@ PocketLab 这次得到的最重要结论不是“SwiftPM 赢了”。
 
 下一篇，我们会把目前偏大的 `shared` 拆成真正的模块边界。届时会出现一个更难的问题：Android 可以直接依赖多个 KMP modules，为什么 iOS 往往更适合只看见一个 umbrella framework？
 
+## 留给你的动手挑战
+
+不要只停在“我知道 XCFramework 是什么”。请给自己的 KMP 模块做一次可回滚的 Apple 二进制交付演练：
+
+1. 分别生成 device 与 Simulator 的 Release framework，并用 `lipo -info` 或 `file` 记录每个 slice 的架构；
+2. 把它们组装成 XCFramework，再用一个最小 Swift 6 consumer 导入公开 API，证明产物不是“打包成功但无法消费”；
+3. 压缩产物、计算 SwiftPM checksum，然后故意改动 ZIP 中一个字节，观察完整性校验为什么必须失败。
+
+最后写下你的选择：本地开发使用 direct integration、远程发布使用 SwiftPM binary，还是由 CocoaPods 接管？答案里必须同时包含团队约束、失败场景和回滚路径。能解释这些取舍，比记住三条打包命令更接近真正掌握 Apple 分发。
+
 ## 官方资料
 
 - [Kotlin Multiplatform：iOS integration methods](https://kotlinlang.org/docs/multiplatform/multiplatform-ios-integration-overview.html)
