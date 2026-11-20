@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     kotlin("multiplatform")
@@ -6,6 +7,9 @@ plugins {
     id("app.cash.sqldelight")
     id("com.android.kotlin.multiplatform.library")
 }
+
+val pocketLabVersion = "0.13.0"
+version = pocketLabVersion
 
 kotlin {
     // A plain JVM target gives us a fast feedback loop and makes the distinction
@@ -26,12 +30,21 @@ kotlin {
         }
     }
 
-    // This host is x86_64, so its local iOS Simulator target is iosX64.
-    // Apple Silicon hosts should use iosSimulatorArm64() instead.
-    iosX64 {
-        binaries.framework {
+    // A framework belongs to one platform/architecture variant. XCFramework
+    // gathers the device and Simulator variants into one distributable bundle.
+    val appleBundle = XCFramework("PocketLabShared")
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64(),
+    ).forEach { appleTarget ->
+        appleTarget.binaries.framework {
             baseName = "PocketLabShared"
             isStatic = true
+            binaryOption("bundleId", "dev.kmpjourney.pocketlab.shared")
+            binaryOption("bundleShortVersionString", pocketLabVersion)
+            binaryOption("bundleVersion", "13")
+            appleBundle.add(this)
         }
     }
 
@@ -64,7 +77,7 @@ kotlin {
             implementation("app.cash.sqldelight:android-driver:2.4.1")
         }
 
-        iosX64Main.dependencies {
+        iosMain.dependencies {
             implementation("io.ktor:ktor-client-darwin:3.6.1")
             implementation("app.cash.sqldelight:native-driver:2.4.1")
         }

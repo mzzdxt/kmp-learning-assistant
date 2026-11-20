@@ -16,7 +16,10 @@
 commonMain
 ├── jvmMain                 → JVM 字节码
 ├── androidMain             → Android AAR 中的 JVM 字节码
-└── iosX64Main              → x86_64 iOS 模拟器原生代码
+└── iosMain                 → 共同 Apple 原生实现
+    ├── iosX64              → Intel iOS Simulator
+    ├── iosSimulatorArm64   → Apple Silicon iOS Simulator
+    └── iosArm64            → iPhone / iPad device
 ```
 
 ## 运行
@@ -57,7 +60,7 @@ commonMain
 
 这些组合同时满足 Kotlin、AGP 与 Gradle 三方兼容要求。实验刻意使用 Google 新的 Android-KMP library plugin；旧教程里的 `com.android.library + androidTarget()` 正在迁移，不应成为新工程的默认示范。
 
-本机是 x86_64，因此实验声明 `iosX64()`。Apple Silicon 机器应把它替换为 `iosSimulatorArm64()`，并将相应源码目录改成 `iosSimulatorArm64Main` / `iosSimulatorArm64Test`。这不是命名偏好，而是不同的 Kotlin/Native 编译目标。
+工程当前同时声明 `iosX64()`、`iosSimulatorArm64()` 与 `iosArm64()`，共同实现位于 `iosMain` / `iosTest`。本机是 x86_64，所以只运行 `iosX64Test`；它仍能交叉编译另外两个 Release frameworks，并组装 XCFramework。Apple Silicon CI 需要实际运行 `iosSimulatorArm64Test`。这是 host 执行能力与 target 产物能力的区别，不是命名偏好。
 
 ## 实验 02 基线结果（2026-11-18）
 

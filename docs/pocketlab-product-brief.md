@@ -183,3 +183,21 @@ common model / use case
 - Apple API gate 检查 header allow/deny symbols，并用 Swift 6 complete strict concurrency type-check App source；
 - Swift Export 已具备 enum、sealed、suspend 与 Flow 映射，但当前仍为 Alpha，先平行验证而不替换稳定发布路径。
 
+## 当前 Apple 分发边界
+
+PocketLab 把本地联合开发与远程二进制交付分成两条路径：
+
+```text
+local:  Kotlin source → embedAndSignAppleFrameworkForXcode → SwiftUI App
+remote: Kotlin source → Release XCFramework → ZIP/checksum → SwiftPM consumer
+```
+
+- Apple 源码位于共同 `iosMain` / `iosTest`，同时编译 `iosX64`、`iosSimulatorArm64` 与 `iosArm64`；
+- framework 使用 static linkage，module name 为 `PocketLabShared`，bundle id 为 `dev.kmpjourney.pocketlab.shared`；
+- XCFramework 包含 device `arm64` 与 Simulator `arm64 + x86_64`，不使用 `lipo` 混合 device/Simulator platform variants；
+- 同仓 Xcode App 继续 direct integration，避免每次 Kotlin 修改都经过发布循环；
+- 远程默认使用不可变 XCFramework ZIP + SwiftPM binary target，checksum 从最终 archive 计算；
+- CocoaPods 保留给 Kotlin 必须消费 Pod 或团队已有强 Pod 基础设施的场景，不与 direct integration 同时接管当前 framework；
+- 生成 XCFramework、ZIP、checksum 与临时 Swift package 留在 ignored `build/`，源码 Git 只保存配置、模板与门禁；
+- Intel host 只运行 `iosX64Test`；Apple Silicon CI 必须补 `iosSimulatorArm64Test`，不把交叉编译冒充运行时覆盖。
+

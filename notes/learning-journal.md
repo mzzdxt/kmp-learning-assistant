@@ -470,6 +470,53 @@
 对应文章：[为 Swift 设计 Kotlin API：能导出，不等于好用](../articles/12-designing-kotlin-api-for-swift.md)
 
 
+---
+
+## 2026-11-20：一个 framework 文件夹，装不下所有 Apple 消费者
+
+### 我原来以为
+
+- 生成 `.framework` 后，就能直接交给所有 iOS 工程。
+- XCFramework、SwiftPM 与 CocoaPods 是三个互斥的集成方案。
+- `lipo` 能把所有 iOS 架构合进一个万能 framework。
+- XCFramework 有 40 MB，最终 App 就会增加 40 MB。
+- 远程 binary package 能减少环境配置，所以本地开发也应该只用远程包。
+
+### 实验实际发生了
+
+- 只有 `iosX64` 时，framework 只能服务 Intel Simulator；新增了 `iosArm64` 与 `iosSimulatorArm64`。
+- Apple implementation/test 从 `iosX64Main` / `iosX64Test` 提升到 `iosMain` / `iosTest`，三种 targets 才能共享完整平台实现。
+- `assemblePocketLabSharedReleaseXCFramework` 首次冷构建约 8 分 24 秒，真实生成 device arm64 与 universal Simulator 两个 slices。
+- Simulator binary 包含 `x86_64 arm64`，device binary 为 `arm64`；两者都是 static archive。
+- 直接用 `lipo` 合并两个 arm64 变体失败，因为 device 与 Simulator 架构名相同、platform ABI 不同。
+- 两个 slice 的 header 都是 2,267 行且 SHA-256 一致；完整 XCFramework 约 40 MB，ZIP 约 12 MB。
+- SwiftPM local binary package 能解析，ZIP 能生成 checksum；binary podspec example 能被 CocoaPods 解析。
+- distribution gate 能从 XCFramework type-check Swift 6 smoke source，并拒绝架构、版本和 API surface 回归。
+
+### 原因
+
+- Framework 是具体 platform/variant/architecture/build type/linkage 的二进制变体。
+- Fat framework 只在同一平台内组合不同 CPU；XCFramework 用 metadata 区分 device 与 Simulator variants。
+- SwiftPM/CocoaPods 负责版本、下载、完整性与消费者集成，通常承载的仍是 XCFramework。
+- XCFramework 同时保存多个候选 slices，目录体积不等于最终 App 选中的机器码。
+- 本地 direct integration 优化修改与调试反馈；远程 binary distribution 优化仓库隔离与消费者工具要求。
+
+### 对工程决策的影响
+
+- 同仓 SwiftUI App 继续使用 `embedAndSignAppleFrameworkForXcode`，远程发布采用 Release XCFramework + SwiftPM。
+- 生成 artifact 不提交源码 Git；由 CI 从 tag 构建、检查、压缩、计算 checksum 并上传。
+- 同一版本的 remote ZIP 不可覆盖；artifact 改变必须发布新 semantic version。
+- CocoaPods 不因 SwiftPM 存在而被永久排除；Kotlin Pod dependencies 或现有 Specs pipeline 会触发重新评估。
+- Intel host 的 arm64 Simulator test 缺口被明确记录，后续 Apple Silicon CI 必须补齐。
+- 多模块阶段优先建立一个显式 export allowlist 的 umbrella framework，避免多个 Kotlin runtimes/API surfaces 无序进入 iOS。
+
+对应决策记录：[ADR-0011](../docs/adr/0011-apple-binary-distribution.md)
+
+对应实验：[实验 13](../labs/13-apple-distribution/README.md)
+
+对应文章：[Framework、XCFramework、SPM 与 CocoaPods：你的 Kotlin 代码究竟怎么送到 iOS？](../articles/13-apple-framework-distribution.md)
+
+
 
 
 
