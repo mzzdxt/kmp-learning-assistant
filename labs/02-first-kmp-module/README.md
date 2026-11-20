@@ -56,6 +56,23 @@ shared: Ktor + SQLDelight + platform adapters + Apple facade
 ./scripts/verify-module-boundaries.sh
 ```
 
+验证 Gradle 缓存与 Kotlin 编译报告能力：
+
+```shell
+./scripts/verify-build-performance.sh
+```
+
+按场景测量配置、开发任务、Native no-op 与 clean/cache restore：
+
+```shell
+./scripts/benchmark-build.sh config-only 5
+./scripts/benchmark-build.sh dev-noop 5
+./scripts/benchmark-build.sh native-noop 3
+./scripts/benchmark-build.sh dev-clean-cache 1
+```
+
+结果写入 ignored `build/benchmarks`。完整方法、实测数据与解释见[实验 15](../15-build-performance/README.md)。
+
 任务名以实际 Gradle 输出为准。可以用下面的命令观察全部测试任务：
 
 ```shell

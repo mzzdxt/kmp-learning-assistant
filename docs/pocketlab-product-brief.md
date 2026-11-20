@@ -223,3 +223,20 @@ shared: Ktor + SQLDelight + platform adapters + Apple facade
 - module 拆分后 Apple header 从 2,267 行降到 888 行，领域规则、端口与用例不再导出；
 - SQLDelight 生成 API 仍与 facade 同处 shared，是未来 infrastructure/apple-api 再拆分的候选，而非已完成项。
 
+## 当前构建性能边界
+
+PocketLab 不再用单一“总构建时间”描述开发体验，而是按反馈目标拆分：
+
+```text
+JVM 日常反馈 → Android 风险 → Apple 单架构 Debug
+→ 全目标合并验证 → 多架构 Release distribution
+```
+
+- Gradle build cache 与 configuration cache 已启用，并由 `verify-build-performance.sh` 验证 reuse；
+- Kotlin compiler 同时生成 text/JSON reports，用于定位 incremental reason 与 Native compiler phases；
+- benchmark 分离 cache disabled、store、reuse、clean restore 和 up-to-date，不用 wall time 单独证明原因；
+- 当前 warm JVM developer lane 平均约 1.024 s；单一 `iosX64` Debug forced rerun 为 19.80 s；上一轮三架构 Release XCFramework gate 约 4 min 37 s，三者不是同条件 benchmark；
+- 私有 domain 实现改动没有触发 shared/App 重新编译，公共 ABI 改动会正确沿依赖图传播；
+- 不默认执行 `clean`，不在缺少证据时增加 heap、开启 Beta Native incremental 或 Release binary cache；
+- 原始编译报告和日志可能含本机路径，只提交去标识化实验记录。
+

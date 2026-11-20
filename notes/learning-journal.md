@@ -562,6 +562,54 @@
 
 对应文章：[KMP 模块化：共享多少，由谁决定？](../articles/14-kmp-modularization.md)
 
+---
+
+## 2026-11-20：构建慢不是结论，而是一组尚未拆开的成本
+
+### 我原来以为
+
+- Release XCFramework 要 4 分多钟，说明 KMP 日常开发一定很慢。
+- build cache 开启后 wall time 明显下降，就能把全部收益归因给 cache。
+- configuration cache 是另一种编译产物缓存，打开后所有构建都会更快。
+- 私有实现改动只会增量编译那一个文件。
+- 模块化之后，所有改动都不会传播到下游。
+- 给 Gradle 更多 heap、打开 parallel/Native incremental 总不会有坏处。
+
+### 实验实际发生了
+
+- `help` 的 configuration-cache reuse 平均 916 ms，对照 disabled 1,245 ms，约低 26.4%。
+- 日常 JVM no-op reuse 平均 1,024 ms，对照 disabled 1,663 ms，约低 38.4%；但第一次 store 为 4,532 ms，反而更慢。
+- 第一轮 clean/cache 实验看似从 23.077 s 降到 11.911 s，日志却只有 1 个 `FROM-CACHE`，结论被判无效并重测。
+- 受控 warm restore 为 1.510 s，明确出现 28 个 `FROM-CACHE`；outputs 保留时 no-op 为 1.039 s，47 个 tasks `UP-TO-DATE`。
+- 单一 `iosX64` Debug forced rerun 为 19.80 s；Kotlin tasks 占全部 task time 的 91.5%，framework link task 约 9.955 s。
+- 私有等价实现改动让 domain compilation 执行，shared/App compilation 保持 up-to-date；但 Kotlin report 因 KT-62686 明确执行 domain 非增量 fallback。
+- 新增 public method 后，domain、shared 与 Android App 相关 compilation 全部执行，49 tasks 中 17 executed；公共 ABI 正确沿依赖图传播。
+- build-performance gate 成功验证 build/configuration cache、Kotlin text/JSON reports 与重复任务 cache reuse。
+
+### 原因
+
+- configuration cache 保存配置后的 task graph/state；build cache 保存 task outputs；up-to-date 直接使用仍在工作区的 outputs；incremental compiler 则在 compile task 内少做工作。
+- wall time 同时受 daemon、JIT、OS file cache、task selection、cache state 与后台负载影响，不能单独证明因果。
+- KMP 会为多个 targets 分别编译 common source；Release XCFramework 还包含多 architecture、优化、链接、组装和 consumer gates。
+- 模块/classpath snapshot 能隔离不改变 ABI 的实现改动，但真实公共契约变化必须传播。
+- experimental flags 可能带来正确性、兼容性、Release runtime 或二进制体积取舍，必须单独 A/B。
+
+### 对工程决策的影响
+
+- 日常反馈、Android、Apple Debug、合并矩阵和 Release distribution 分成不同 task lanes。
+- 默认保留 up-to-date outputs，不把 `clean` 当构建仪式。
+- 性能记录必须同时保存场景、cache state、wall time 与 task outcomes；证据不足的结果作废重测。
+- 开启 configuration cache 和 Kotlin file/JSON reports，并用 fail-mode 门禁防止升级后静默退化。
+- 不因缺少证据而增大 heap、打开 Beta Native incremental 或 Release binary cache。
+- CI 优先保存 Gradle/Konan caches；remote cache 等待跨 runner 收益、权限和污染恢复方案。
+- 当前不把本机毫秒值设为硬门禁；积累稳定 CI p50/p95 后再定义相对退化预算。
+
+对应决策记录：[ADR-0013](../docs/adr/0013-evidence-based-build-performance.md)
+
+对应实验：[实验 15](../labs/15-build-performance/README.md)
+
+对应文章：[KMP 构建为什么慢：别先加内存，先把 4 分 37 秒拆开](../articles/15-build-performance.md)
+
 
 
 
